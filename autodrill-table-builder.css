@@ -23,7 +23,10 @@ header {
   border-bottom: 1px solid #e4e4e7;
 }
 
-.brand { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+.brand {
+  font-size: 16px;
+  font-weight: 600;
+}
 .brand span { font-weight: 400; color: #71717a; font-size: 13px; margin-left: 8px; }
 
 .main { display: grid; grid-template-columns: 290px 1fr; gap: 16px; align-items: start; }
@@ -33,11 +36,9 @@ header {
 .ps { padding: 14px 16px; border-bottom: 1px solid #e4e4e7; }
 .ps:last-child { border-bottom: none; }
 .sl {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: #71717a;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
   margin-bottom: 8px;
 }
 
@@ -73,6 +74,7 @@ label.mrow {
   color: #18181b;
   user-select: none;
   transition: background 0.1s;
+  line-height: 1.2em;
 }
 label.mrow:hover { background: #f4f4f5; }
 label.mrow input { cursor: pointer; flex-shrink: 0; width: 14px; height: 14px; accent-color: #18181b; }
@@ -89,11 +91,9 @@ code {
 /* ── Size row ── */
 .size-row { display: flex; align-items: center; gap: 10px; }
 .size-row span {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   color: #71717a;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
   white-space: nowrap;
 }
 
@@ -151,11 +151,9 @@ select:focus { border-color: #a1a1aa; }
 .ph-fields { display: flex; flex-direction: column; gap: 8px; }
 .ph-row { display: flex; flex-direction: column; gap: 4px; }
 .ph-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   color: #a1a1aa;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 .ph-input {
   width: 100%;
