@@ -1,0 +1,141 @@
+<div class="app">
+  <header>
+    <div class="brand">AutoDrill <span>Table Builder</span></div>
+    <span style="font-size: 12px; color: #a1a1aa">v1.0</span>
+  </header>
+
+  <div class="main">
+    <!-- Controls -->
+    <div class="panel">
+      <div class="ps">
+        <div class="sl-row">
+          <p class="sl">Table HTML</p>
+          <button class="btn-sm" onclick="stripStyles()">Strip styles</button>
+        </div>
+        <textarea
+          id="html-in"
+          placeholder="<div>
+  <table>
+    <thead>
+      <tr><th>Col A</th><th>Col B</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Value</td><td>Value</td></tr>
+    </tbody>
+  </table>
+</div>"
+        ></textarea>
+      </div>
+
+      <div class="ps">
+        <p class="sl">Modifiers</p>
+        <div class="mod-grid">
+          <label class="mrow"
+            ><input type="checkbox" data-mod="cc-zebra" />Zebra stripe</label
+          >
+          <label class="mrow"
+            ><input type="checkbox" data-mod="cc-row-lines" />Underline
+            rows</label
+          >
+          <label class="mrow"
+            ><input type="checkbox" data-mod="cc-col-lines" />Column
+            lines</label
+          >
+          <label class="mrow"
+            ><input type="checkbox" data-mod="cc-numeric" />Numeric</label
+          >
+          <label class="mrow"
+            ><input type="checkbox" data-mod="cc-sticky-header" />Sticky
+            header</label
+          >
+          <label class="mrow"
+            ><input type="checkbox" data-mod="cc-sticky-first" />Sticky first
+            column</label
+          >
+          <label class="mrow"
+            ><input type="checkbox" data-mod="cc-bare" /> Remove card
+            wrapper</label
+          >
+        </div>
+      </div>
+
+      <div class="ps">
+        <div class="size-row">
+          <span>Size</span>
+          <select id="size-sel">
+            <option value="">Default</option>
+            <option value="cc-size-1">Compact</option>
+            <option value="cc-size-3">Spacious</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ps">
+        <p class="sl" style="margin-bottom: 6px">
+          Applied class
+          <span
+            style="
+              font-weight: 400;
+              text-transform: none;
+              letter-spacing: 0;
+              color: #a1a1aa;
+            "
+            >(click to select)</span
+          >
+        </p>
+        <div class="class-out" id="class-out" title="Click to select modifiers">
+          <span class="class-prefix">class="</span><span id="class-val"></span><span class="class-prefix">"</span>
+        </div>
+      </div>
+
+      <div class="ps">
+        <p class="sl" style="margin-bottom: 6px">Table title</p>
+        <input type="text" id="print-title" class="ph-input" placeholder="Optional title" />
+      </div>
+
+      <div class="ps">
+        <p class="sl" style="margin-bottom: 8px">Print header</p>
+        <div class="ph-fields">
+          <div class="ph-row">
+            <span class="ph-label">Left / logo</span>
+            <div class="ph-brand-area">
+              <input type="text" id="print-brand" class="ph-input" value="AutoDrill" placeholder="Brand name" />
+              <label class="ph-upload-label">
+                <input type="file" id="logo-upload" accept="image/*" onchange="handleLogoUpload(this)" />
+                Upload image
+              </label>
+            </div>
+            <div id="logo-preview-row" class="ph-preview-row" style="display:none">
+              <img id="logo-preview" class="ph-logo-img" />
+              <button type="button" class="ph-remove-btn" onclick="clearLogo()">Remove</button>
+            </div>
+          </div>
+          <div class="ph-row">
+            <span class="ph-label">Right side</span>
+            <input type="text" id="print-meta" class="ph-input" value="autodrill.com · 800-871-5022 · Flemington, NJ" placeholder="Contact info" />
+          </div>
+        </div>
+      </div>
+
+      <div class="ps">
+        <div class="btn-row">
+          <button onclick="openPrint()">Open for printing ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span>Preview</span>
+        <span
+          id="preview-status"
+          style="font-size: 11px; color: #a1a1aa"
+        ></span>
+      </div>
+      <div class="preview-body" id="preview">
+        <p class="empty-state">Paste table HTML on the left to preview.</p>
+      </div>
+    </div>
+  </div>
+</div>
