@@ -1,20 +1,172 @@
 <div class="app">
   <header>
     <div class="brand">AutoDrill <span>Table Builder</span></div>
-    <span style="font-size: 12px; color: #a1a1aa">v1.0</span>
+    <span style="font-size: 12px; color: var(--gray--10)">v1.0</span>
   </header>
 
   <div class="main">
     <!-- Controls -->
     <div class="panel">
-      <div class="ps">
-        <div class="sl-row">
-          <p class="sl">Table HTML</p>
-          <button class="btn-sm" onclick="stripStyles()">Strip styles</button>
+      <details class="pgroup" open>
+        <summary class="pg-head">Title &amp; description</summary>
+
+        <div class="ps">
+          <div class="ph-fields">
+            <div class="ph-row">
+              <span class="ph-label">Title</span>
+              <input type="text" id="table-title" class="ph-input" placeholder="Optional title" />
+            </div>
+            <div class="ph-row">
+              <span class="ph-label">Description</span>
+              <textarea id="table-desc" class="ph-input ph-textarea" rows="2" placeholder="Optional description"></textarea>
+            </div>
+          </div>
+          <label class="mrow mrow-block">
+            <input type="checkbox" id="opt-head-hidden" />Visually hidden
+          </label>
+          <p class="pg-hint">
+            Shown above the table in the preview and in print. Visually hidden
+            keeps the title, description and any <code>&lt;caption&gt;</code>
+            in the markup as <code>.sr-only</code> — read by screen readers,
+            not drawn on screen.
+          </p>
         </div>
-        <textarea
-          id="html-in"
-          placeholder="<div>
+      </details>
+
+      <details class="pgroup" open>
+        <summary class="pg-head">Style</summary>
+
+        <div class="ps">
+          <div class="mod-grid">
+            <label class="mrow"
+              ><input type="checkbox" data-mod="row-lines" />Row lines</label
+            >
+            <label class="mrow"
+              ><input type="checkbox" data-mod="col-lines" />Column
+              lines</label
+            >
+            <label class="mrow"
+              ><input type="checkbox" data-mod="numeric" />Numeric</label
+            >
+            <label class="mrow"
+              ><input type="checkbox" data-mod="bare" />Remove card
+              wrapper</label
+            >
+          </div>
+        </div>
+
+        <div class="ps">
+          <div class="opt-rows">
+            <div class="opt-row">
+              <span>Striped rows</span>
+              <select data-mod-sel="stripe-rows">
+                <option value="">None</option>
+                <option value="zebra-odd">Odd</option>
+                <option value="zebra-even">Even</option>
+              </select>
+            </div>
+            <div class="opt-row">
+              <span>Striped columns</span>
+              <select data-mod-sel="stripe-cols">
+                <option value="">None</option>
+                <option value="zebra-cols-odd">Odd</option>
+                <option value="zebra-cols-even">Even</option>
+              </select>
+            </div>
+            <div class="opt-row">
+              <span>Size</span>
+              <select data-mod-sel="size">
+                <option value="">Default</option>
+                <option value="size-1">Compact</option>
+                <option value="size-3">Spacious</option>
+              </select>
+            </div>
+            <div class="opt-row">
+              <span>Corners</span>
+              <select data-mod-sel="radius">
+                <option value="radius-0">None</option>
+                <option value="radius-1">Small</option>
+                <option value="" selected>Medium</option>
+                <option value="radius-3">Large</option>
+              </select>
+            </div>
+          </div>
+          <p class="pg-hint">
+            Corners round the table either way — removing the card wrapper
+            drops its border and fill, not its rounding.
+          </p>
+        </div>
+      </details>
+
+      <details class="pgroup" open>
+        <summary class="pg-head">Print settings</summary>
+
+        <div class="ps">
+          <p class="sl" style="margin-bottom: 8px">Print header</p>
+          <div class="ph-fields">
+            <div class="ph-row">
+              <span class="ph-label">Left / logo</span>
+              <div class="ph-brand-area">
+                <input type="text" id="print-brand" class="ph-input" value="AutoDrill" placeholder="Brand name" />
+                <label class="ph-upload-label">
+                  <input type="file" id="logo-upload" accept="image/*" onchange="handleLogoUpload(this)" />
+                  Upload image
+                </label>
+              </div>
+              <div id="logo-preview-row" class="ph-preview-row" style="display:none">
+                <img id="logo-preview" class="ph-logo-img" />
+                <button type="button" class="ph-remove-btn" onclick="clearLogo()">Remove</button>
+              </div>
+            </div>
+            <div class="ph-row">
+              <span class="ph-label">Right side</span>
+              <input type="text" id="print-meta" class="ph-input" value="autodrill.com · 800-871-5022 · Flemington, NJ" placeholder="Contact info" />
+            </div>
+          </div>
+        </div>
+
+        <div class="ps">
+          <div class="btn-row">
+            <button onclick="openPrint()">Open for printing ↗</button>
+          </div>
+        </div>
+      </details>
+
+    </div>
+
+    <!-- Preview + source -->
+    <div class="workspace">
+      <div class="preview-panel">
+        <div class="preview-header">
+          <div class="preview-title">
+            <span>Preview</span>
+            <span id="preview-status"></span>
+          </div>
+          <div class="preview-opts">
+            <label class="orow"
+              ><input type="checkbox" id="opt-sticky-header" />Sticky
+              header</label
+            >
+            <label class="orow"
+              ><input type="checkbox" id="opt-sticky-first" />Sticky first
+              column</label
+            >
+          </div>
+        </div>
+        <div class="preview-body" id="preview">
+          <p class="empty-state">Paste table HTML below to preview.</p>
+        </div>
+      </div>
+
+      <div class="panel source-panel">
+        <div class="ps ps-source">
+          <div class="sl-row">
+            <p class="sl">Table HTML</p>
+            <button class="btn-sm" onclick="stripAttributes()" title="Remove style, class and other presentational attributes">Strip attributes</button>
+          </div>
+          <textarea
+            id="html-in"
+            placeholder="<div>
   <table>
     <thead>
       <tr><th>Col A</th><th>Col B</th></tr>
@@ -24,117 +176,8 @@
     </tbody>
   </table>
 </div>"
-        ></textarea>
-      </div>
-
-      <div class="ps">
-        <p class="sl">Modifiers</p>
-        <div class="mod-grid">
-          <label class="mrow"
-            ><input type="checkbox" data-mod="cc-zebra" />Zebra stripe</label
-          >
-          <label class="mrow"
-            ><input type="checkbox" data-mod="cc-row-lines" />Underline
-            rows</label
-          >
-          <label class="mrow"
-            ><input type="checkbox" data-mod="cc-col-lines" />Column
-            lines</label
-          >
-          <label class="mrow"
-            ><input type="checkbox" data-mod="cc-numeric" />Numeric</label
-          >
-          <label class="mrow"
-            ><input type="checkbox" data-mod="cc-sticky-header" />Sticky
-            header</label
-          >
-          <label class="mrow"
-            ><input type="checkbox" data-mod="cc-sticky-first" />Sticky first
-            column</label
-          >
-          <label class="mrow"
-            ><input type="checkbox" data-mod="cc-bare" /> Remove card
-            wrapper</label
-          >
+          ></textarea>
         </div>
-      </div>
-
-      <div class="ps">
-        <div class="size-row">
-          <span>Size</span>
-          <select id="size-sel">
-            <option value="">Default</option>
-            <option value="cc-size-1">Compact</option>
-            <option value="cc-size-3">Spacious</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="ps">
-        <p class="sl" style="margin-bottom: 6px">
-          Applied class
-          <span
-            style="
-              font-weight: 400;
-              text-transform: none;
-              letter-spacing: 0;
-              color: #a1a1aa;
-            "
-            >(click to select)</span
-          >
-        </p>
-        <div class="class-out" id="class-out" title="Click to select modifiers">
-          <span class="class-prefix">class="</span><span id="class-val"></span><span class="class-prefix">"</span>
-        </div>
-      </div>
-
-      <div class="ps">
-        <p class="sl" style="margin-bottom: 6px">Table title</p>
-        <input type="text" id="print-title" class="ph-input" placeholder="Optional title" />
-      </div>
-
-      <div class="ps">
-        <p class="sl" style="margin-bottom: 8px">Print header</p>
-        <div class="ph-fields">
-          <div class="ph-row">
-            <span class="ph-label">Left / logo</span>
-            <div class="ph-brand-area">
-              <input type="text" id="print-brand" class="ph-input" value="AutoDrill" placeholder="Brand name" />
-              <label class="ph-upload-label">
-                <input type="file" id="logo-upload" accept="image/*" onchange="handleLogoUpload(this)" />
-                Upload image
-              </label>
-            </div>
-            <div id="logo-preview-row" class="ph-preview-row" style="display:none">
-              <img id="logo-preview" class="ph-logo-img" />
-              <button type="button" class="ph-remove-btn" onclick="clearLogo()">Remove</button>
-            </div>
-          </div>
-          <div class="ph-row">
-            <span class="ph-label">Right side</span>
-            <input type="text" id="print-meta" class="ph-input" value="autodrill.com · 800-871-5022 · Flemington, NJ" placeholder="Contact info" />
-          </div>
-        </div>
-      </div>
-
-      <div class="ps">
-        <div class="btn-row">
-          <button onclick="openPrint()">Open for printing ↗</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Preview -->
-    <div class="preview-panel">
-      <div class="preview-header">
-        <span>Preview</span>
-        <span
-          id="preview-status"
-          style="font-size: 11px; color: #a1a1aa"
-        ></span>
-      </div>
-      <div class="preview-body" id="preview">
-        <p class="empty-state">Paste table HTML on the left to preview.</p>
       </div>
     </div>
   </div>
