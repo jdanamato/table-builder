@@ -200,6 +200,85 @@ function cleanMarkup() {
   render(true);
 }
 
+/* ── Format ──
+   Re-indents the markup so the table structure reads at a glance. Nothing is
+   added or taken away: every attribute survives, and only the whitespace
+   between tags is rewritten. Elements whose children are all text or inline
+   markup stay on one line, so a cell is never split across four of them. */
+const VOID_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr'
+]);
+
+const INLINE_TAGS = new Set([
+  'a', 'abbr', 'b', 'bdi', 'bdo', 'br', 'cite', 'code', 'data', 'del', 'dfn',
+  'em', 'i', 'img', 'ins', 'kbd', 'mark', 'q', 's', 'samp', 'small', 'span',
+  'strong', 'sub', 'sup', 'time', 'u', 'var', 'wbr'
+]);
+
+const INDENT = '  ';
+
+/* The tag as written, attributes and all — rebuilt rather than sliced out of
+   outerHTML, which a `>` inside an attribute value would cut in the wrong
+   place. */
+function openTag(el) {
+  const attrs = [...el.attributes]
+    .map(a => ' ' + a.name + '="' + a.value.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"')
+    .join('');
+  return '<' + el.tagName.toLowerCase() + attrs + '>';
+}
+
+/* Whitespace-only text between tags is layout, not content, so it is dropped
+   and written back as indentation. Text with something in it is kept. */
+function meaningful(n) {
+  return n.nodeType === 1 || n.nodeType === 8 || (n.nodeType === 3 && n.textContent.trim());
+}
+
+function writeNode(node, depth, out) {
+  const pad = INDENT.repeat(depth);
+
+  if (node.nodeType === 3) { out.push(pad + node.textContent.trim().replace(/\s+/g, ' ')); return; }
+  if (node.nodeType === 8) { out.push(pad + '<!--' + node.textContent + '-->'); return; }
+  if (node.nodeType !== 1) return;
+
+  const tag = node.tagName.toLowerCase();
+  if (VOID_TAGS.has(tag)) { out.push(pad + openTag(node)); return; }
+
+  const kids  = [...node.childNodes].filter(meaningful);
+  const close = '</' + tag + '>';
+
+  if (!kids.length) { out.push(pad + openTag(node) + close); return; }
+
+  /* Inline-only content keeps its own spacing, collapsed to single spaces —
+     breaking it onto separate lines would introduce gaps the browser renders. */
+  if (kids.every(n => n.nodeType === 3 || (n.nodeType === 1 && INLINE_TAGS.has(n.tagName.toLowerCase())))) {
+    out.push(pad + openTag(node) + node.innerHTML.replace(/\s+/g, ' ').trim() + close);
+    return;
+  }
+
+  out.push(pad + openTag(node));
+  kids.forEach(k => writeNode(k, depth + 1, out));
+  out.push(pad + close);
+}
+
+function prettyHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+
+  const out = [];
+  [...tmp.childNodes].filter(meaningful).forEach(n => writeNode(n, 0, out));
+  return out.join('\n');
+}
+
+function formatMarkup() {
+  /* The current settings are written in first, so what gets indented is the
+     markup as it stands rather than the paste it started from. */
+  render(true);
+  inp.value = prettyHtml(inp.value);
+  /* No sync on the way back: re-emitting the markup would undo the indenting. */
+  render();
+}
+
 /* ── Preview-only display options ──
    Sticky header / first column are viewing aids for the preview pane only:
    they depend on a scroll container, so they mean nothing in the exported
@@ -404,31 +483,72 @@ applyPreviewOpts();
 syncCaptionField();
 updateCss();
 
-/* ── Logo state ── */
+/* ── Logo state ──
+   A logo stands in for the brand text rather than sitting beside it, so the
+   text field and the upload button give way to the preview once one is set.
+   The header and the footer each keep their own. */
 let logoDataUrl = null;
+let footerLogoDataUrl = null;
 
-function handleLogoUpload(input) {
+/* Both chrome rows are wired the same way; only the element ids differ. */
+const LOGO_SLOTS = {
+  header: {
+    input: 'logo-upload', preview: 'logo-preview', row: 'logo-preview-row',
+    text: 'print-brand', upload: 'logo-upload-label',
+    set: url => { logoDataUrl = url; }
+  },
+  footer: {
+    input: 'footer-logo-upload', preview: 'footer-logo-preview', row: 'footer-logo-preview-row',
+    text: 'footer-brand', upload: 'footer-upload-label',
+    set: url => { footerLogoDataUrl = url; }
+  }
+};
+
+function readLogo(which, input) {
+  const slot = LOGO_SLOTS[which];
   const file = input.files[0];
   if (!file) return;
+
   const reader = new FileReader();
-  reader.onload = function(e) {
-    logoDataUrl = e.target.result;
-    const img = document.getElementById('logo-preview');
-    img.src = logoDataUrl;
-    document.getElementById('logo-preview-row').style.display = 'flex';
-    document.getElementById('print-brand').style.display = 'none';
-    document.querySelector('.ph-upload-label').style.display = 'none';
+  reader.onload = function (e) {
+    slot.set(e.target.result);
+    document.getElementById(slot.preview).src = e.target.result;
+    document.getElementById(slot.row).style.display = 'flex';
+    document.getElementById(slot.text).style.display = 'none';
+    document.getElementById(slot.upload).style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
 
-function clearLogo() {
-  logoDataUrl = null;
-  document.getElementById('logo-upload').value = '';
-  document.getElementById('logo-preview-row').style.display = 'none';
-  document.getElementById('print-brand').style.display = '';
-  document.querySelector('.ph-upload-label').style.display = '';
+function dropLogo(which) {
+  const slot = LOGO_SLOTS[which];
+  slot.set(null);
+  document.getElementById(slot.input).value = '';
+  document.getElementById(slot.row).style.display = 'none';
+  document.getElementById(slot.text).style.display = '';
+  document.getElementById(slot.upload).style.display = '';
 }
+
+function handleLogoUpload(input)       { readLogo('header', input); }
+function clearLogo()                   { dropLogo('header'); }
+function handleFooterLogoUpload(input) { readLogo('footer', input); }
+function clearFooterLogo()             { dropLogo('footer'); }
+
+/* ── Print footer ──
+   Off by default. Synced, it repeats the header at the foot of the page;
+   unsynced, it gets content of its own, and only then are its fields worth
+   showing. */
+const footOn   = document.getElementById('opt-footer');
+const footSync = document.getElementById('opt-footer-sync');
+
+function syncFooterFields() {
+  const on = footOn.checked;
+  document.getElementById('footer-sync-row').style.display = on ? '' : 'none';
+  document.getElementById('footer-fields').style.display = on && !footSync.checked ? '' : 'none';
+}
+
+[footOn, footSync].forEach(el => el.addEventListener('change', syncFooterFields));
+syncFooterFields();
 
 /* ── Export: page chrome for the standalone output file ── */
 const PAGE_CSS = [
@@ -441,6 +561,9 @@ const PAGE_CSS = [
   '.doc-head{margin-bottom:1rem}',
   '.doc-title{margin:0;font-size:18px;font-weight:600;letter-spacing:-.01em}',
   '.doc-desc{margin:6px 0 0;max-width:65ch;font-size:12px;line-height:1.5;color:#52525b}',
+  'footer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:10px;border-top:1px solid #e4e4e7;margin-top:1.5rem}',
+  'footer .brand{font-size:12px}',
+  'footer .brand img{max-height:28px;max-width:160px}',
   '@media print{body{margin:1cm}}'
 ].join('\n');
 
@@ -458,19 +581,51 @@ function docHead() {
     + '</div>';
 }
 
-function buildDoc(body) {
-  const brandText = document.getElementById('print-brand').value || 'AutoDrill';
-  const metaText  = document.getElementById('print-meta').value || '';
-  const brandHtml = logoDataUrl
-    ? '<img src="' + logoDataUrl + '" alt="Logo" />'
-    : esc(brandText);
+/* Header and footer are the same row — a brand or logo at the start, a line of
+   contact or note text at the end — so both are written by this. */
+function chromeRow(tag, logo, text, meta) {
+  const brandHtml = logo ? '<img src="' + logo + '" alt="Logo" />' : esc(text);
+  return '<' + tag + '><span class="brand">' + brandHtml + '</span>'
+    + '<span class="meta">' + esc(meta) + '</span></' + tag + '>';
+}
 
+function printHeader() {
+  return chromeRow(
+    'header',
+    logoDataUrl,
+    document.getElementById('print-brand').value || 'AutoDrill',
+    document.getElementById('print-meta').value || ''
+  );
+}
+
+/* Synced, the footer reads the header's own fields rather than a copy of them,
+   so editing the header keeps the two in step. */
+function printFooter() {
+  if (!footOn.checked) return '';
+  if (footSync.checked) {
+    return chromeRow(
+      'footer',
+      logoDataUrl,
+      document.getElementById('print-brand').value || 'AutoDrill',
+      document.getElementById('print-meta').value || ''
+    );
+  }
+  return chromeRow(
+    'footer',
+    footerLogoDataUrl,
+    document.getElementById('footer-brand').value || '',
+    document.getElementById('footer-meta').value || ''
+  );
+}
+
+function buildDoc(body) {
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>AutoDrill Chart</title><style>\n'
     + PAGE_CSS + '\n' + tableCss()
     + '\n</style></head><body>'
-    + '<header><span class="brand">' + brandHtml + '</span><span class="meta">' + esc(metaText) + '</span></header>'
+    + printHeader()
     + docHead()
     + body
+    + printFooter()
     + '</body></html>';
 }
 

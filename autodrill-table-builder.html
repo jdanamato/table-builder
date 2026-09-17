@@ -19,28 +19,6 @@
     <!-- Controls -->
     <div class="panel">
       <details class="pgroup" open>
-        <summary class="pg-head">Title &amp; description</summary>
-
-        <div class="ps">
-          <div class="ph-fields">
-            <div class="ph-row">
-              <span class="ph-label">Title</span>
-              <input type="text" id="table-title" class="ph-input" placeholder="Optional title" />
-            </div>
-            <div class="ph-row">
-              <span class="ph-label">Description</span>
-              <textarea id="table-desc" class="ph-input ph-textarea" rows="2" placeholder="Optional description"></textarea>
-            </div>
-          </div>
-          <p class="pg-hint">
-            Printed above the table in the PDF. Both sit beside the table
-            rather than inside it, so neither joins the markup you copy — the
-            caption is the part that does.
-          </p>
-        </div>
-      </details>
-
-      <details class="pgroup" open>
         <summary class="pg-head">Caption</summary>
 
         <div class="ps">
@@ -177,13 +155,32 @@
         <summary class="pg-head">Print settings</summary>
 
         <div class="ps">
+          <p class="sl" style="margin-bottom: 8px">Title &amp; description</p>
+          <div class="ph-fields">
+            <div class="ph-row">
+              <span class="ph-label">Title</span>
+              <input type="text" id="table-title" class="ph-input" placeholder="Optional title" />
+            </div>
+            <div class="ph-row">
+              <span class="ph-label">Description</span>
+              <textarea id="table-desc" class="ph-input ph-textarea" rows="2" placeholder="Optional description"></textarea>
+            </div>
+          </div>
+          <p class="pg-hint">
+            Printed above the table in the PDF. Both sit beside the table
+            rather than inside it, so neither joins the markup you copy — the
+            caption is the part that does.
+          </p>
+        </div>
+
+        <div class="ps">
           <p class="sl" style="margin-bottom: 8px">Print header</p>
           <div class="ph-fields">
             <div class="ph-row">
               <span class="ph-label">Left / logo</span>
               <div class="ph-brand-area">
                 <input type="text" id="print-brand" class="ph-input" value="AutoDrill" placeholder="Brand name" />
-                <label class="ph-upload-label">
+                <label class="ph-upload-label" id="logo-upload-label">
                   <input type="file" id="logo-upload" accept="image/*" onchange="handleLogoUpload(this)" />
                   Upload image
                 </label>
@@ -196,6 +193,44 @@
             <div class="ph-row">
               <span class="ph-label">Right side</span>
               <input type="text" id="print-meta" class="ph-input" value="autodrill.com · 800-871-5022 · Flemington, NJ" placeholder="Contact info" />
+            </div>
+          </div>
+        </div>
+
+        <div class="ps">
+          <p class="sl" style="margin-bottom: 8px">Print footer</p>
+          <div class="mrow-stack" style="margin-top: 0">
+            <label class="mrow"
+              ><input type="checkbox" id="opt-footer" />Add footer<span
+                class="tip"
+                title="Prints a footer below the table, with the same rule and spacing as the header."
+                ><svg class="tip-icon" aria-hidden="true"><use href="#i-info"></use></svg></span
+            ></label>
+            <label class="mrow" id="footer-sync-row"
+              ><input type="checkbox" id="opt-footer-sync" checked />Sync with header<span
+                class="tip"
+                title="Repeats the header’s logo and contact line at the foot of the page. Uncheck to give the footer content of its own."
+                ><svg class="tip-icon" aria-hidden="true"><use href="#i-info"></use></svg></span
+            ></label>
+          </div>
+          <div class="ph-fields" id="footer-fields" style="margin-top: 8px">
+            <div class="ph-row">
+              <span class="ph-label">Left / logo</span>
+              <div class="ph-brand-area">
+                <input type="text" id="footer-brand" class="ph-input" placeholder="Footer text" />
+                <label class="ph-upload-label" id="footer-upload-label">
+                  <input type="file" id="footer-logo-upload" accept="image/*" onchange="handleFooterLogoUpload(this)" />
+                  Upload image
+                </label>
+              </div>
+              <div id="footer-logo-preview-row" class="ph-preview-row" style="display:none">
+                <img id="footer-logo-preview" class="ph-logo-img" />
+                <button type="button" class="ph-remove-btn" onclick="clearFooterLogo()">Remove</button>
+              </div>
+            </div>
+            <div class="ph-row">
+              <span class="ph-label">Right side</span>
+              <input type="text" id="footer-meta" class="ph-input" placeholder="Date, page note, disclaimer" />
             </div>
           </div>
         </div>
@@ -229,10 +264,11 @@
           <div class="sl-row">
             <p class="sl">Table HTML</p>
             <div class="sl-actions">
+              <button class="btn-sm" onclick="formatMarkup()">Format</button>
               <button class="btn-sm" onclick="cleanMarkup()">Clean</button>
               <span
                 class="tip"
-                title="Strips style, class, id, data-* and every other presentational attribute off the pasted markup, keeping only what carries table structure or meaning: colspan, rowspan, headers, scope, abbr, span, href, src, alt, title, lang, dir."
+                title="Format re-indents the markup so the table structure is readable, leaving every attribute in place. Clean strips style, class, id, data-* and every other presentational attribute, keeping only what carries table structure or meaning: colspan, rowspan, headers, scope, abbr, span, href, src, alt, title, lang, dir."
                 ><svg class="tip-icon" aria-hidden="true"><use href="#i-info"></use></svg
               ></span>
             </div>
