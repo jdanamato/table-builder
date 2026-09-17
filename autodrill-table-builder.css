@@ -411,7 +411,9 @@ header {
 /* Preview stacked over the source editor, so pasted markup stays in view
    while the table renders above it. */
 .workspace { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-.source-panel .ps-source { border-bottom: none; }
+
+/* The markup and the styles that go with it share one panel, so the sections
+   inside it keep the rule that `.panel > .ps` otherwise drops. */
 
 /* ── Panel ── */
 .panel { background: var(--white); border: 1px solid var(--gray--6); border-radius: 12px; overflow: hidden; }
@@ -420,7 +422,7 @@ header {
 .panel > .ps { border-bottom: none; }
 
 /* ── Panel groups ── */
-.pgroup { border-top: 1px solid var(--gray--6); }
+.pgroup:not(:first-child) { border-top: 1px solid var(--gray--6); }
 
 summary.pg-head {
   display: flex;
@@ -452,6 +454,19 @@ summary.pg-head::after {
 .pgroup[open] > summary.pg-head::after { transform: translateY(1px) rotate(-135deg); }
 .pgroup[open] > summary.pg-head { border-bottom: 1px solid var(--gray--6); }
 
+.pgroup-sub {
+  border-top-style: none !important;
+}
+.pgroup-sub > summary.pg-head {
+  padding: 8px 16px;
+  font-weight: 500;
+  color: var(--gray--11);
+  background: transparent;
+}
+.pgroup-sub > summary.pg-head:hover { background: var(--gray--2); }
+.pgroup-sub[open] > summary.pg-head { border-bottom: none; }
+.pgroup-sub .ps { padding-top: 0; }
+
 .pg-hint { margin-top: 8px; font-size: 11.5px; line-height: 1.45; color: var(--gray--10); }
 .sl {
   font-size: 12px;
@@ -479,8 +494,9 @@ textarea {
 textarea:focus { border-color: var(--accent--8); background: var(--white); }
 
 /* ── Modifier checkboxes ── */
-.mod-grid { display: grid; grid-template-columns: auto auto; justify-content: start; column-gap: 6px; }
-.mod-grid.mod-grid-wide { grid-template-columns: auto; }
+/* One column: with a tooltip marker after several of the labels, two columns
+   no longer fit the panel without clipping. */
+.mod-grid { display: grid; grid-template-columns: auto; justify-content: start; column-gap: 6px; }
 
 label.mrow {
   display: flex;
@@ -534,17 +550,85 @@ select {
 }
 select:focus { border-color: var(--accent--8); }
 
-/* ── Source label row / strip button ── */
-.sl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+/* ── Source / CSS label rows ── */
+.sl-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .sl-row .sl { margin-bottom: 0; }
+.sl-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ── Tooltip marker ──
+   The explanation hangs off this icon rather than off the control itself, so
+   pointing at a checkbox or a button never puts a tooltip in the way. */
+.sprite { display: none; }
+
+.tip {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 5px;
+  cursor: help;
+  flex: none;
+  transition: color 0.1s;
+  color: var(--gray-9);
+}
+.tip:hover { color: var(--gray--11); }
+.tip-icon { display: block; width: 14px; height: 14px; }
+
+:is(label, span, code)[title] { cursor: help; }
+
+/* ── Segmented radio group ── */
+/* The segmented control sets the height every action in the row matches. */
+.sl-actions { --action-h: 26px; }
+.seg { display: flex; align-items: center; height: var(--action-h); padding: 2px; gap: 2px; background: var(--gray--3); border-radius: 6px; }
+.seg-opt {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--gray--11);
+  padding: 0 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+}
+.seg-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-opt:hover { color: var(--gray--12); }
+.seg-opt:has(input:checked) { background: var(--white); color: var(--gray--12); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--accent--8); outline-offset: 1px; }
+
+/* ── Generated CSS, read-only ── */
+.css-out {
+  margin: 0;
+  max-height: 300px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  font-size: 11px;
+  line-height: 1.65;
+  tab-size: 2;
+  white-space: pre;
+  border: 1px solid var(--gray--6);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--gray--2);
+  color: var(--gray--12);
+  user-select: text;
+}
+.css-out:focus-visible { outline: 2px solid var(--accent--8); outline-offset: -1px; }
+/* Inline output is one long run of markup rather than rules on their own lines. */
+.css-out.is-markup { white-space: pre-wrap; overflow-wrap: anywhere; }
 .btn-sm {
+  display: inline-flex;
+  align-items: center;
+  height: var(--action-h, 26px);
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 500;
   cursor: pointer;
   border: 1px solid var(--gray--6);
   border-radius: 5px;
-  padding: 3px 8px;
+  padding: 0 10px;
   background: var(--white);
   color: var(--gray--11);
   transition: background 0.1s, border-color 0.1s;
@@ -659,40 +743,9 @@ button:active { background: var(--gray--5); transform: scale(0.96); }
 .preview-title { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 #preview-status { font-size: 11px; font-weight: 400; color: var(--gray--10); white-space: nowrap; }
 
-/* Preview-only display options — not part of the exported class */
-.preview-opts { display: flex; align-items: center; gap: 4px; }
-
-label.orow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 6px;
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--gray--11);
-  white-space: nowrap;
-  cursor: pointer;
-  border-radius: 6px;
-  user-select: none;
-  transition: background 0.1s;
-}
-label.orow:hover { background: var(--gray--3); color: var(--gray--12); }
-label.orow input { cursor: pointer; flex-shrink: 0; width: 13px; height: 13px; accent-color: var(--accent--9); }
-
 .preview-body { padding: 16px; }
 
 .empty-state { color: var(--gray--10); font-size: 13px; text-align: center; padding: 48px 16px; }
-
-/* ── Preview: title & description ── */
-.preview-body .table-head { margin-bottom: 12px; }
-.preview-body .table-title { font-size: 15px; font-weight: 600; color: var(--gray--12); }
-.preview-body .table-desc {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--gray--11);
-  margin-top: 4px;
-  max-width: 65ch;
-}
 
 /* ── Preview: table styles ── */
 .preview-body div:has(> table) {
@@ -736,7 +789,23 @@ label.orow input { cursor: pointer; flex-shrink: 0; width: 13px; height: 13px; a
 
 .preview-body tfoot :is(th, td) { font-weight: 500; border-top: 1px solid var(--gray--6); }
 
-.preview-body caption { padding: 8px 12px; text-align: start; font-weight: 500; color: var(--gray--11); font-size: 12px; }
+/* ── Preview: caption (the title, and the description under it) ── */
+.preview-body caption {
+  padding: 10px 12px;
+  text-align: start;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray--12);
+}
+.preview-body .table-desc {
+  display: block;
+  margin-top: 4px;
+  max-width: 65ch;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--gray--11);
+}
 
 .preview-body tbody tr:hover > * { background: var(--gray--a3); }
 
