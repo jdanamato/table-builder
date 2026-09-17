@@ -43,8 +43,22 @@ const LEGACY_MODIFIERS = ['zebra', 'zebra-cols'];
 /* Classes emitted by the builder rather than chosen from the panel. */
 const EMITTED = ['sr-only'];
 
-/* Every class this builder owns, selected or not. The classes carry no prefix
-   of their own, so a previous pass has to be cleared by name, not by pattern. */
+/* What a superseded name is worth to the panel, so a table styled by an
+   earlier version comes back with the settings it was built with. */
+const LEGACY_ADOPT = { 'zebra': 'zebra-odd', 'zebra-cols': 'zebra-cols-even' };
+
+/* The families this builder manages, beyond the exact names a control can
+   produce. A hand-typed `radius-2` is no option here, but it is still this
+   builder's class to clear — left in place, the panel's own radius would stack
+   on top of it and the table would carry two. */
+const OWNED_FAMILIES = [
+  /^zebra(-cols)?(-odd|-even)?$/,
+  /^size-\d+$/,
+  /^radius-\d+$/
+];
+
+/* Every class a control can produce, selected or not — the names side of what
+   this builder owns, with `OWNED_FAMILIES` covering the rest. */
 function allModifiers() {
   const all = [...document.querySelectorAll('[data-mod]')].map(cb => cb.dataset.mod);
   document.querySelectorAll('[data-mod-sel]').forEach(s => {
@@ -115,10 +129,75 @@ function withPrefix(node) {
   return clone;
 }
 
+/* A class under whichever prefix this builder may have written it with, so
+   `ad-radius-1` and `radius-1` both read as `radius-1`. Anything carrying no
+   prefix of ours comes back as it went in. */
+function bareName(c) {
+  const p = [...new Set([lastPrefix, classPrefix()])].filter(Boolean)
+    .find(p => c.startsWith(p) && c.length > p.length);
+  return p ? c.slice(p.length) : c;
+}
+
+function isOwned(c) {
+  const n = bareName(c);
+  return allModifiers().includes(n) || OWNED_FAMILIES.some(re => re.test(n));
+}
+
 function clearOwned(table) {
-  const prefixes = [...new Set(['', lastPrefix, classPrefix()])];
-  const names = allModifiers();
-  names.forEach(n => prefixes.forEach(p => table.classList.remove(p + n)));
+  [...table.classList].forEach(c => { if (isOwned(c)) table.classList.remove(c); });
+}
+
+/* The widest row, counting a spanning cell for every column it covers — a
+   table that opens on a full-width band would otherwise report one column. */
+function columnCount(table) {
+  let max = 0;
+  table.querySelectorAll('tr').forEach(tr => {
+    let n = 0;
+    [...tr.children].forEach(c => { n += Math.max(1, parseInt(c.getAttribute('colspan'), 10) || 1); });
+    if (n > max) max = n;
+  });
+  return max;
+}
+
+/* ── Adopting the markup ──
+   `clearOwned` drops whatever classes the markup arrived with, which is right
+   when the panel is what changed and wrong when the markup is. Reading the
+   controls off the markup first is what makes the editor a real input: a table
+   this builder wrote comes back with the settings it was built with, and a
+   class edited by hand takes, instead of being quietly written over.
+
+   Only what a control can represent is read. A class in one of this builder's
+   families that no option carries — `radius-2` — leaves the control at its
+   default, the same as a table with no class in that family at all. */
+function adoptClasses() {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = inp.value;
+  const table = tmp.querySelector('table');
+  if (!table) return;
+
+  /* Read against the bare names, so a class the markup carries is recognised
+     whether or not it arrived with the prefix this builder is set to write. */
+  const on = el => n => [...el.classList].map(bareName)
+    .some(c => c === n || LEGACY_ADOPT[c] === n);
+
+  const has = on(table);
+  document.querySelectorAll('[data-mod]').forEach(cb => { cb.checked = has(cb.dataset.mod); });
+  document.querySelectorAll('[data-mod-sel]').forEach(sel => {
+    const hit = [...sel.options].find(o => o.value && has(o.value));
+    sel.value = hit ? hit.value : '';
+  });
+
+  const cap = table.querySelector(':scope > caption');
+  if (cap) capHide.checked = on(cap)('sr-only');
+}
+
+/* Typing, pasting and Format all arrive here: the markup is what the person
+   just worked on, so its classes set the panel before anything is written back
+   over them. A control change goes straight to `render`, where the panel is
+   what wins — whichever of the two was touched last decides. */
+function syncFromMarkup(rewrite) {
+  adoptClasses();
+  render(rewrite);
 }
 
 /* ── Render preview ──
@@ -159,9 +238,7 @@ function render(sync) {
     applyCaption(table);
 
     const rows = table.querySelectorAll('tbody tr').length;
-    const firstRow = table.querySelector('tr');
-    const cols = firstRow ? firstRow.children.length : 0;
-    status.textContent = rows + ' rows · ' + cols + ' cols';
+    status.textContent = rows + ' rows · ' + columnCount(table) + ' cols';
   } else {
     status.textContent = '';
     captionOut = false;
@@ -176,6 +253,7 @@ function render(sync) {
   lastPrefix = classPrefix();
 
   if (sync) inp.value = exportHtml;
+  applyPreviewOpts();
   updateCss();
 }
 
@@ -271,9 +349,10 @@ function prettyHtml(html) {
 }
 
 function formatMarkup() {
-  /* The current settings are written in first, so what gets indented is the
-     markup as it stands rather than the paste it started from. */
-  render(true);
+  /* The settings are read off the markup and written back in first, so what
+     gets indented is one canonical set of classes — never the hand-edited one
+     stacked under the panel's own. */
+  syncFromMarkup(true);
   inp.value = prettyHtml(inp.value);
   /* No sync on the way back: re-emitting the markup would undo the indenting. */
   render();
@@ -291,6 +370,40 @@ const PREVIEW_OPTS = [
 function applyPreviewOpts() {
   PREVIEW_OPTS.forEach(([id, cls]) => {
     prev.classList.toggle(cls, document.getElementById(id).checked);
+  });
+  layoutSticky();
+}
+
+/* A header of several rows cannot pin them all to the same offset — they would
+   land on top of each other, leaving only the last one in sight. Each row is
+   measured and pinned below the ones before it, and given a z-index above them
+   so the row that stacks first also paints in front.
+
+   The band labels are wrapped here rather than in the markup being exported:
+   the preview owns its own copy of the table by this point, so the wrapper is
+   a display aid that never reaches the copied HTML or the printed page. */
+function layoutSticky() {
+  const table = prev.querySelector('table');
+  if (!table) return;
+
+  const head = [...(table.tHead ? table.tHead.rows : [])];
+  const depth = head.length;
+  let offset = 0;
+
+  head.forEach((row, i) => {
+    row.style.setProperty('--sticky-top', offset + 'px');
+    row.style.setProperty('--sticky-z', depth - i + 1);
+    /* Read after the offset is set, so a row already pinned still measures at
+       its laid-out height rather than at nothing. */
+    offset += row.getBoundingClientRect().height;
+  });
+
+  table.querySelectorAll('tr > :first-child[colspan]').forEach(cell => {
+    if (cell.firstElementChild && cell.firstElementChild.classList.contains('band-label')) return;
+    const label = document.createElement('span');
+    label.className = 'band-label';
+    while (cell.firstChild) label.appendChild(cell.firstChild);
+    cell.appendChild(label);
   });
 }
 
@@ -324,8 +437,10 @@ const CSS_MODS = {
   'zebra-cols-even': ['.{{zebra-cols-even}} :is(thead,tbody,tfoot) :is(th,td):nth-child(even):not([colspan]){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}'],
   'row-lines': ['.{{row-lines}} tbody tr:not(:last-child) > *{border-bottom:1px solid #e4e4e7}'],
   'col-lines': ['.{{col-lines}} tr > *:not(:last-child){border-right:1px solid #e4e4e7}'],
-  'numeric':   ['.{{numeric}} tbody td{text-align:right}',
-                '.{{numeric}} :is(th,td):first-child{text-align:left}'],
+  /* The header cells align with the figures under them, so a column reads
+     straight down; the first column labels the row and keeps its own side. */
+  'numeric':   ['.{{numeric}} :is(thead,tbody,tfoot) :is(th,td){text-align:right}',
+                '.{{numeric}} :is(thead,tbody,tfoot) :is(th,td):first-child{text-align:left}'],
   'bare':      ['div:has(> table.{{bare}}){background:transparent;border:none}'],
   'size-1':    ['.{{size-1}} :is(thead,tbody,tfoot) :is(th,td){padding:5px 8px}'],
   'size-3':    ['.{{size-3}} :is(thead,tbody,tfoot) :is(th,td){padding:12px 16px}'],
@@ -466,7 +581,9 @@ async function copyCss(btn) {
 }
 
 /* ── Event listeners ── */
-inp.addEventListener('input', () => render());
+inp.addEventListener('input', () => syncFromMarkup(false));
+/* After the drop, so the pasted value is the one that gets read. */
+inp.addEventListener('paste', () => setTimeout(() => syncFromMarkup(true), 0));
 document.querySelectorAll('[data-mod], [data-mod-sel]').forEach(el =>
   el.addEventListener('change', () => render(true))
 );
@@ -479,6 +596,8 @@ document.querySelectorAll('input[name="css-format"]').forEach(el =>
 );
 document.addEventListener('click', e => { if (e.target.closest('.tip')) e.preventDefault(); });
 PREVIEW_OPTS.forEach(([id]) => document.getElementById(id).addEventListener('change', applyPreviewOpts));
+/* Row heights move with the width the table is laid out at. */
+window.addEventListener('resize', layoutSticky);
 applyPreviewOpts();
 syncCaptionField();
 updateCss();

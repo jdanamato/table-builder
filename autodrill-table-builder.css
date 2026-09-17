@@ -778,21 +778,44 @@ button:active { background: var(--gray--5); transform: scale(0.96); }
   border-spacing: 0;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+
+  /* Cell padding lives here rather than on the cells, so the sticky column can
+     re-use the inline value to keep a pinned label off the scrollport edge. */
+  --pad-y: 8px;
+  --pad-x: 12px;
+
+  /* The opaque plane a sticky cell sits on. Anything pinned needs a solid
+     fill, or the columns sliding beneath it read straight through. */
+  --surface: var(--gray--2);
+
+  /* Declared here rather than on the cells: a value set on the cell itself
+     would out-rank the one a row hands down, and the row stripe would never
+     reach the cell it is meant to tint. */
+  --row-tint: transparent;
+  --col-tint: transparent;
 }
 
+/* ── Preview: cell tints ──
+   Stripes and hover are applied as two stacked overlay layers rather than as a
+   background colour, which leaves `background-color` free to carry the opaque
+   surface a sticky cell needs. The column layer paints over the row layer, so
+   the two stripe settings compose instead of one replacing the other. */
 .preview-body th,
 .preview-body td {
-  padding: 8px 12px;
+  padding: var(--pad-y) var(--pad-x);
   vertical-align: middle;
   text-align: start;
   white-space: nowrap;
   overflow-wrap: break-word;
   color: var(--gray--12);
+  background-image:
+    linear-gradient(var(--col-tint), var(--col-tint)),
+    linear-gradient(var(--row-tint), var(--row-tint));
 }
 
 .preview-body thead :is(th, td) {
   font-weight: 500;
-  background: var(--gray--2);
+  background-color: var(--surface);
   border-bottom: 1px solid var(--gray--6);
   color: var(--gray--11);
   font-size: 12px;
@@ -828,10 +851,8 @@ button:active { background: var(--gray--5); transform: scale(0.96); }
   color: var(--gray--12);
 }
 
-.preview-body tbody tr:hover > * { background: var(--gray--a3); }
-
 .preview-body tr:has(> th[colspan]) > th {
-  background: var(--gray--2);
+  background-color: var(--surface);
   font-weight: 500;
   color: var(--gray--11);
   font-size: 12px;
@@ -841,35 +862,55 @@ button:active { background: var(--gray--5); transform: scale(0.96); }
 /* ── Preview: modifiers ── */
 /* `zebra` and `zebra-cols` are the pre-odd/even names, kept so markup already
    published with them keeps its stripes. */
-.preview-body table:is(.zebra, .zebra-odd) tbody tr:nth-child(odd) > * { background: var(--gray--a2); }
-.preview-body table.zebra-even tbody tr:nth-child(even) > * { background: var(--gray--a2); }
+.preview-body table:is(.zebra, .zebra-odd) tbody tr:nth-child(odd) { --row-tint: var(--gray--a2); }
+.preview-body table.zebra-even tbody tr:nth-child(even) { --row-tint: var(--gray--a2); }
 
-/* Overlaid as an image so a column stripe composites over the row stripe —
-   and over the header's own background — instead of replacing it. */
 .preview-body table.zebra-cols-odd :is(thead, tbody, tfoot) :is(th, td):nth-child(odd):not([colspan]) {
-  background-image: linear-gradient(var(--gray--a2), var(--gray--a2));
+  --col-tint: var(--gray--a2);
 }
 .preview-body table:is(.zebra-cols, .zebra-cols-even) :is(thead, tbody, tfoot) :is(th, td):nth-child(even):not([colspan]) {
-  background-image: linear-gradient(var(--gray--a2), var(--gray--a2));
+  --col-tint: var(--gray--a2);
 }
 
-.preview-body table:is(.zebra, .zebra-odd, .zebra-even, .zebra-cols, .zebra-cols-odd, .zebra-cols-even) tbody tr:hover > * {
-  background: var(--gray--a3);
-}
+/* Last of the row tints, so it wins over a stripe at the same specificity.
+   A band row is a section label rather than a reading row, so it stays put. */
+.preview-body tbody tr:hover:not(:has(> th[colspan])) { --row-tint: var(--gray--a3); }
 
 .preview-body table.row-lines tbody tr:not(:last-child) > * { border-bottom: 1px solid var(--gray--6); }
 
 .preview-body table.col-lines tr > *:not(:last-child) { border-inline-end: 1px solid var(--gray--6); }
 
-.preview-body table.numeric tbody td { text-align: end; }
-.preview-body table.numeric :where(th, td):first-child { text-align: start; }
+/* Header cells align with the figures beneath them — a column of numbers read
+   top to bottom is the point of the setting. The first column labels the row,
+   so it keeps its own alignment. */
+.preview-body table.numeric :is(thead, tbody, tfoot) :is(th, td) { text-align: end; }
+.preview-body table.numeric :is(thead, tbody, tfoot) :is(th, td):first-child { text-align: start; }
 
-/* ── Preview-only: sticky header / first column (display aid, never exported) ── */
-.preview-body.is-sticky-header table thead :is(th, td) { position: sticky; top: 0; z-index: 2; background: var(--gray--2); }
+/* ── Preview-only: sticky header / first column (display aid, never exported) ──
+   A pinned cell is painted over by whatever slides beneath it, so every one of
+   them carries the opaque `--surface` as its background colour; stripes and
+   hover ride above that as tint layers and stay translucent. A header of more
+   than one row cannot share a single offset — each row is pinned below the one
+   before it, from `--sticky-top` and `--sticky-z`, measured in JS. */
+.preview-body.is-sticky-header table > thead > tr > :is(th, td) {
+  position: sticky;
+  top: var(--sticky-top, 0px);
+  z-index: var(--sticky-z, 2);
+  background-color: var(--surface);
+}
 
-.preview-body.is-sticky-first table :where(th, td):first-child { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--gray--2); }
-.preview-body.is-sticky-first table thead :is(th, td):first-child { z-index: 3; }
-.preview-body.is-sticky-first table :where(th, td):first-child::after {
+/* A cell spanning the table has no room to shift inside its own row, so
+   pinning it would do nothing; its label is pinned instead, below. */
+.preview-body.is-sticky-first table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child:not([colspan]) {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background-color: var(--surface);
+}
+.preview-body.is-sticky-first table > thead > tr > :is(th, td):first-child:not([colspan]) {
+  z-index: calc(var(--sticky-z, 2) + 10);
+}
+.preview-body.is-sticky-first table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child:not([colspan])::after {
   content: '';
   position: absolute;
   inset-block-start: 0;
@@ -878,18 +919,33 @@ button:active { background: var(--gray--5); transform: scale(0.96); }
   height: 100%;
   background: var(--gray--7);
 }
-.preview-body.is-sticky-first table tbody tr:hover :where(th, td):first-child { background: var(--gray--a4); }
+/* Column lines already draw that edge; two of them would read as a thick one. */
+.preview-body.is-sticky-first table.col-lines > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child::after {
+  content: none;
+}
+
+/* A section band spans every column, so scrolling sideways carries its label
+   out of view. Pinning the label keeps the band named, indented by the cell's
+   own padding so it does not ride the edge of the scrollport. */
+.preview-body.is-sticky-first table :is(th, td)[colspan] > .band-label {
+  position: sticky;
+  inset-inline-start: var(--pad-x);
+  display: inline-block;
+}
 
 /* The wrapper already clips (overflow), so its radius is what rounds the
    table. Dropping the card keeps that rounding — only the fill and border go. */
 .preview-body div:has(> table.bare) { background: transparent; border: none; }
+/* Without the card there is no fill behind the table, so a pinned cell has to
+   take its opaque plane from the panel it is sitting on. */
+.preview-body table.bare { --surface: var(--white); }
 
 .preview-body div:has(> table.radius-0) { --tr: 0; }
 .preview-body div:has(> table.radius-1) { --tr: 6px; }
 .preview-body div:has(> table.radius-3) { --tr: 16px; }
 
-.preview-body table.size-1 :is(thead, tbody, tfoot) :is(th, td) { padding: 5px 8px; }
-.preview-body table.size-3 :is(thead, tbody, tfoot) :is(th, td) { padding: 12px 16px; }
+.preview-body table.size-1 { --pad-y: 5px; --pad-x: 8px; }
+.preview-body table.size-3 { --pad-y: 12px; --pad-x: 16px; }
 
 /* ── Utilities ── */
 .sr-only {
