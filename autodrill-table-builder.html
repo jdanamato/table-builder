@@ -32,15 +32,42 @@
               <textarea id="table-desc" class="ph-input ph-textarea" rows="2" placeholder="Optional description"></textarea>
             </div>
           </div>
-          <label class="mrow mrow-block"
-            ><input type="checkbox" id="opt-head-hidden" />Visually hidden<span
-              class="tip"
-              title="Keeps the caption in the markup as .sr-only — read by screen readers, not drawn on screen."
-              ><svg class="tip-icon" aria-hidden="true"><use href="#i-info"></use></svg></span
-          ></label>
           <p class="pg-hint">
-            The title becomes the table's <code>&lt;caption&gt;</code>. Without
-            a title there is no caption, and the description has nowhere to go.
+            Printed above the table in the PDF. Both sit beside the table
+            rather than inside it, so neither joins the markup you copy — the
+            caption is the part that does.
+          </p>
+        </div>
+      </details>
+
+      <details class="pgroup" open>
+        <summary class="pg-head">Caption</summary>
+
+        <div class="ps">
+          <div class="ph-fields">
+            <div class="ph-row">
+              <span class="ph-label">Caption</span>
+              <input type="text" id="table-caption" class="ph-input" placeholder="Optional caption" />
+            </div>
+          </div>
+          <div class="mrow-stack">
+            <label class="mrow"
+              ><input type="checkbox" id="opt-caption-sync" />Sync with title<span
+                class="tip"
+                title="Keeps the caption matching the printed title. Uncheck to caption the table with something of its own."
+                ><svg class="tip-icon" aria-hidden="true"><use href="#i-info"></use></svg></span
+            ></label>
+            <label class="mrow"
+              ><input type="checkbox" id="opt-caption-hidden" />Visually hidden<span
+                class="tip"
+                title="Keeps the caption in the markup as .sr-only — read by screen readers, not drawn on screen. The printed title is untouched."
+                ><svg class="tip-icon" aria-hidden="true"><use href="#i-info"></use></svg></span
+            ></label>
+          </div>
+          <p class="pg-hint">
+            The caption becomes the table's <code>&lt;caption&gt;</code>, so it
+            travels with the copied markup. Typing here overwrites a caption
+            already in the pasted HTML; an empty field leaves that one alone.
           </p>
         </div>
       </details>

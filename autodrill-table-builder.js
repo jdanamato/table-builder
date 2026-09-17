@@ -4,7 +4,9 @@ const prev    = document.getElementById('preview');
 const status  = document.getElementById('preview-status');
 const titleIn = document.getElementById('table-title');
 const descIn  = document.getElementById('table-desc');
-const headHid = document.getElementById('opt-head-hidden');
+const capIn   = document.getElementById('table-caption');
+const capSync = document.getElementById('opt-caption-sync');
+const capHide = document.getElementById('opt-caption-hidden');
 const prefIn  = document.getElementById('class-prefix');
 const cssOut  = document.getElementById('css-out');
 const cssLabel= document.getElementById('css-label');
@@ -39,7 +41,7 @@ function getClasses() {
 const LEGACY_MODIFIERS = ['zebra', 'zebra-cols'];
 
 /* Classes emitted by the builder rather than chosen from the panel. */
-const EMITTED = ['sr-only', 'table-desc'];
+const EMITTED = ['sr-only'];
 
 /* Every class this builder owns, selected or not. The classes carry no prefix
    of their own, so a previous pass has to be cleared by name, not by pattern. */
@@ -57,32 +59,43 @@ function esc(t) {
 }
 
 /* ── Caption ──
-   The title is the table's caption, so it travels with the markup instead of
-   sitting beside it. No title means no caption — including one pasted in. */
-function hasCaption() {
-  return titleIn.value.trim() !== '';
+   The caption belongs to the table: it lives in the markup and travels with
+   it, unlike the title and description, which are printed beside the table
+   and never written into it. Text typed here overwrites a caption already in
+   the pasted markup; an empty field leaves that one as it stands. */
+function captionText() {
+  return (capSync.checked ? titleIn.value : capIn.value).trim();
+}
+
+/* Whether the table that was just rendered carries a caption — from this
+   panel or from the pasted markup. The caption rules follow that, not the
+   field, so a pasted caption is styled too. */
+let captionOut = false;
+
+/* Synced, the field mirrors the title and stops taking input. Unchecking
+   leaves the mirrored text behind as the starting point for an edit. */
+function syncCaptionField() {
+  capIn.disabled = capSync.checked;
+  if (capSync.checked) capIn.value = titleIn.value;
 }
 
 function applyCaption(table) {
-  const old = table.querySelector(':scope > caption');
-  if (old) old.remove();
+  let cap = table.querySelector(':scope > caption');
+  const t = captionText();
 
-  const t = titleIn.value.trim();
-  if (!t) return;
-
-  const cap = document.createElement('caption');
-  cap.textContent = t;
-
-  const d = descIn.value.trim();
-  if (d) {
-    const span = document.createElement('span');
-    span.className = 'table-desc';
-    span.innerHTML = esc(d).replace(/\n/g, '<br>');
-    cap.appendChild(span);
+  if (t) {
+    if (!cap) {
+      cap = document.createElement('caption');
+      table.insertBefore(cap, table.firstChild);
+    }
+    cap.textContent = t;
   }
-  if (headHid.checked) cap.classList.add('sr-only');
 
-  table.insertBefore(cap, table.firstChild);
+  captionOut = !!cap;
+  if (!cap) return;
+
+  cap.classList.toggle('sr-only', capHide.checked);
+  if (!cap.className) cap.removeAttribute('class');
 }
 
 /* ── Prefixing ──
@@ -120,6 +133,7 @@ function render(sync) {
     prev.innerHTML = '<p class="empty-state">Paste table HTML below to preview.</p>';
     status.textContent = '';
     exportHtml = '';
+    captionOut = false;
     updateCss();
     return;
   }
@@ -150,9 +164,14 @@ function render(sync) {
     status.textContent = rows + ' rows · ' + cols + ' cols';
   } else {
     status.textContent = '';
+    captionOut = false;
   }
 
-  prev.innerHTML = tmp.innerHTML;
+  /* The title and description are shown the way they will print — above the
+     table, outside the markup — so the preview stays a preview of the page,
+     not of the copy. `tmp` is what the export is built from, and they are
+     deliberately not in it. */
+  prev.innerHTML = docHead() + tmp.innerHTML;
   exportHtml = withPrefix(tmp).innerHTML;
   lastPrefix = classPrefix();
 
@@ -210,8 +229,7 @@ const CSS_BASE = [
 ];
 
 const CSS_CAPTION = [
-  'caption{padding:10px 12px;text-align:start;font-size:15px;font-weight:600;color:#18181b}',
-  '.{{table-desc}}{display:block;margin-top:4px;max-width:65ch;font-size:11.5px;font-weight:400;line-height:1.5;color:#52525b}'
+  'caption{padding:10px 12px;text-align:start;font-size:15px;font-weight:600;color:#18181b}'
 ];
 
 const CSS_SR_ONLY = [
@@ -279,9 +297,9 @@ function expandRule(r) {
    the prefix — what both the stylesheet and the inline pass are built from. */
 function activeRules() {
   const rules = CSS_BASE.slice();
-  if (hasCaption()) {
+  if (captionOut) {
     rules.push(...CSS_CAPTION);
-    if (headHid.checked) rules.push(...CSS_SR_ONLY);
+    if (capHide.checked) rules.push(...CSS_SR_ONLY);
   }
   getClasses().forEach(c => { if (CSS_MODS[c]) rules.push(...CSS_MODS[c]); });
   rules.push(...CSS_PRINT);
@@ -373,14 +391,17 @@ inp.addEventListener('input', () => render());
 document.querySelectorAll('[data-mod], [data-mod-sel]').forEach(el =>
   el.addEventListener('change', () => render(true))
 );
-[titleIn, descIn, prefIn].forEach(el => el.addEventListener('input', () => render(true)));
-headHid.addEventListener('change', () => render(true));
+[descIn, prefIn, capIn].forEach(el => el.addEventListener('input', () => render(true)));
+titleIn.addEventListener('input', () => { syncCaptionField(); render(true); });
+capSync.addEventListener('change', () => { syncCaptionField(); render(true); });
+capHide.addEventListener('change', () => render(true));
 document.querySelectorAll('input[name="css-format"]').forEach(el =>
   el.addEventListener('change', updateCss)
 );
 document.addEventListener('click', e => { if (e.target.closest('.tip')) e.preventDefault(); });
 PREVIEW_OPTS.forEach(([id]) => document.getElementById(id).addEventListener('change', applyPreviewOpts));
 applyPreviewOpts();
+syncCaptionField();
 updateCss();
 
 /* ── Logo state ── */
@@ -417,8 +438,25 @@ const PAGE_CSS = [
   '.brand{font-size:15px;font-weight:600;letter-spacing:-.02em}',
   '.brand img{display:inline-block;max-height:36px;max-width:200px;width:auto;height:auto;vertical-align:middle}',
   '.meta{font-size:11px;color:#71717a}',
+  '.doc-head{margin-bottom:1rem}',
+  '.doc-title{margin:0;font-size:18px;font-weight:600;letter-spacing:-.01em}',
+  '.doc-desc{margin:6px 0 0;max-width:65ch;font-size:12px;line-height:1.5;color:#52525b}',
   '@media print{body{margin:1cm}}'
 ].join('\n');
+
+/* ── Title and description ──
+   They describe the document, so they are printed above the table rather than
+   folded into it. The same block is what the preview shows. */
+function docHead() {
+  const t = titleIn.value.trim();
+  const d = descIn.value.trim();
+  if (!t && !d) return '';
+
+  return '<div class="doc-head">'
+    + (t ? '<h1 class="doc-title">' + esc(t) + '</h1>' : '')
+    + (d ? '<p class="doc-desc">' + esc(d).replace(/\n/g, '<br>') + '</p>' : '')
+    + '</div>';
+}
 
 function buildDoc(body) {
   const brandText = document.getElementById('print-brand').value || 'AutoDrill';
@@ -431,6 +469,7 @@ function buildDoc(body) {
     + PAGE_CSS + '\n' + tableCss()
     + '\n</style></head><body>'
     + '<header><span class="brand">' + brandHtml + '</span><span class="meta">' + esc(metaText) + '</span></header>'
+    + docHead()
     + body
     + '</body></html>';
 }

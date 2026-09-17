@@ -384,7 +384,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--gray--12);
-  background: var(--gray--3);
+  background: var(--gray--1);
   min-height: 100vh;
   padding: 24px;
 }
@@ -417,7 +417,10 @@ header {
 
 /* ── Panel ── */
 .panel { background: var(--white); border: 1px solid var(--gray--6); border-radius: 12px; overflow: hidden; }
-.ps { padding: 14px 16px; border-bottom: 1px solid var(--gray--6); }
+.ps {
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--gray--6);
+}
 .ps:last-child { border-bottom: none; }
 .panel > .ps { border-bottom: none; }
 
@@ -452,7 +455,8 @@ summary.pg-head::after {
   transition: transform 0.15s;
 }
 .pgroup[open] > summary.pg-head::after { transform: translateY(1px) rotate(-135deg); }
-.pgroup[open] > summary.pg-head { border-bottom: 1px solid var(--gray--6); }
+.pgroup[open] > summary.pg-head {
+}
 
 .pgroup-sub {
   border-top-style: none !important;
@@ -501,7 +505,7 @@ textarea:focus { border-color: var(--accent--8); background: var(--white); }
 label.mrow {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--gap-1);
   padding: 5px 6px;
   font-size: 12.5px;
   cursor: pointer;
@@ -513,6 +517,7 @@ label.mrow {
   line-height: 1.2em;
 }
 label.mrow.mrow-block { margin: 8px 0 0; margin-inline-start: -6px; }
+.mrow-stack { display: flex; flex-direction: column; margin-top: 8px; margin-inline-start: -6px; }
 label.mrow:hover { background: var(--gray--3); }
 label.mrow input { cursor: pointer; flex-shrink: 0; width: 14px; height: 14px; accent-color: var(--accent--9); }
 
@@ -563,13 +568,13 @@ select:focus { border-color: var(--accent--8); }
 .tip {
   display: inline-flex;
   align-items: center;
-  margin-inline-start: 5px;
+  margin-inline-start: var(--space-2);
+  color: var(--gray--9);
   cursor: help;
   flex: none;
   transition: color 0.1s;
-  color: var(--gray-9);
 }
-.tip:hover { color: var(--gray--11); }
+.tip:hover { color: var(--gray--10); }
 .tip-icon { display: block; width: 14px; height: 14px; }
 
 :is(label, span, code)[title] { cursor: help; }
@@ -658,6 +663,7 @@ select:focus { border-color: var(--accent--8); }
   transition: border-color 0.15s;
 }
 .ph-input:focus { border-color: var(--accent--8); background: var(--white); }
+.ph-input:disabled { background: var(--gray--3); color: var(--gray--10); cursor: not-allowed; }
 .ph-textarea { min-height: 0; line-height: 1.5; resize: vertical; }
 .ph-brand-area { display: flex; gap: 6px; align-items: center; }
 .ph-upload-label {
@@ -725,7 +731,12 @@ button:active { background: var(--gray--5); transform: scale(0.96); }
 }
 
 /* ── Preview panel ── */
-.preview-panel { background: var(--white); border: 1px solid var(--gray--6); border-radius: 12px; overflow: hidden; }
+.preview-panel {
+  background: var(--white);
+  border: 1px solid var(--gray--6);
+  border-radius: 12px;
+  overflow: hidden;
+}
 
 .preview-header {
   padding: 10px 16px;
@@ -789,22 +800,32 @@ button:active { background: var(--gray--5); transform: scale(0.96); }
 
 .preview-body tfoot :is(th, td) { font-weight: 500; border-top: 1px solid var(--gray--6); }
 
-/* ── Preview: caption (the title, and the description under it) ── */
+/* ── Preview: the printed title and description ──
+   Shown above the table, outside the card, because that is where they land on
+   paper. Nothing here is part of the markup being copied. */
+.preview-body .doc-head { margin-bottom: 12px; }
+.preview-body .doc-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--gray--12);
+}
+.preview-body .doc-desc {
+  margin: 4px 0 0;
+  max-width: 65ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--gray--11);
+}
+
+/* ── Preview: caption ── */
 .preview-body caption {
   padding: 10px 12px;
   text-align: start;
   font-size: 15px;
   font-weight: 600;
   color: var(--gray--12);
-}
-.preview-body .table-desc {
-  display: block;
-  margin-top: 4px;
-  max-width: 65ch;
-  font-size: 12.5px;
-  font-weight: 400;
-  line-height: 1.5;
-  color: var(--gray--11);
 }
 
 .preview-body tbody tr:hover > * { background: var(--gray--a3); }
