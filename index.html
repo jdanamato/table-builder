@@ -25,11 +25,15 @@
   </header>
 
   <div class="main">
-    <!-- Controls -->
+    <!-- Controls, split across three tabs -->
     <div class="panel">
-      <details class="pgroup" open>
-        <summary class="pg-head">Caption</summary>
+      <div class="tabs" role="tablist" aria-label="Table settings">
+        <button type="button" class="tab" role="tab" id="tab-table" aria-controls="tp-table" aria-selected="true">Table</button>
+        <button type="button" class="tab" role="tab" id="tab-style" aria-controls="tp-style" aria-selected="false" tabindex="-1">Style</button>
+        <button type="button" class="tab" role="tab" id="tab-print" aria-controls="tp-print" aria-selected="false" tabindex="-1">Print</button>
+      </div>
 
+      <div class="tabpanel" id="tp-table" role="tabpanel" aria-labelledby="tab-table" tabindex="0">
         <div class="ps">
           <div class="ph-fields">
             <div class="ph-row">
@@ -57,11 +61,9 @@
             already in the pasted HTML; an empty field leaves that one alone.
           </p>
         </div>
-      </details>
+      </div>
 
-      <details class="pgroup" open>
-        <summary class="pg-head">Style</summary>
-
+      <div class="tabpanel" id="tp-style" role="tabpanel" aria-labelledby="tab-style" tabindex="0" hidden>
         <div class="ps">
           <div class="mod-grid">
             <label class="mrow"
@@ -158,11 +160,9 @@
             </p>
           </div>
         </details>
-      </details>
+      </div>
 
-      <details class="pgroup" open>
-        <summary class="pg-head">Print settings</summary>
-
+      <div class="tabpanel" id="tp-print" role="tabpanel" aria-labelledby="tab-print" tabindex="0" hidden>
         <div class="ps">
           <div class="ph-fields">
             <div class="ph-row">
@@ -248,13 +248,12 @@
             <button onclick="openPrint()">Open for printing ↗</button>
           </div>
         </div>
-      </details>
-
+      </div>
     </div>
 
     <!-- Preview + source -->
     <div class="workspace">
-      <div class="preview-panel">
+      <div class="panel">
         <div class="preview-header">
           <div class="preview-title">
             <span>Preview</span>

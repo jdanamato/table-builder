@@ -384,9 +384,9 @@ body {
   font-size: 14px;
   line-height: 1.5;
   color: var(--gray--12);
-  background: var(--gray--1);
   min-height: 100vh;
   padding: 24px;
+  background-color: var(--white);
 }
 
 /* ── Layout ── */
@@ -416,13 +416,55 @@ header {
    inside it keep the rule that `.panel > .ps` otherwise drops. */
 
 /* ── Panel ── */
-.panel { background: var(--white); border: 1px solid var(--gray--6); border-radius: 12px; overflow: hidden; }
+.panel {
+  background: var(--white);
+  border: 1px solid var(--black-a2);
+  border-radius: 12px;
+  overflow: hidden;
+}
 .ps {
   padding: var(--space-5);
   border-bottom: 1px solid var(--gray--6);
 }
 .ps:last-child { border-bottom: none; }
 .panel > .ps { border-bottom: none; }
+
+/* ── Panel tabs ──
+   The controls split three ways — Table, Style, Print — so only one set is
+   on screen at a time and the panel stops growing past the preview. */
+.tabs {
+  display: flex;
+  background: var(--gray--2);
+  border-bottom: 1px solid var(--gray--6);
+}
+
+button.tab {
+  flex: 1;
+  padding: 10px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray--11);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s, color 0.1s;
+}
+button.tab:hover { color: var(--gray--12); background: var(--gray--3); }
+button.tab:active { transform: none; }
+button.tab:focus-visible { outline: 2px solid var(--accent--8); outline-offset: -2px; }
+button.tab[aria-selected='true'] {
+  font-weight: 600;
+  color: var(--gray--12);
+  background: var(--white);
+  border-bottom-color: var(--accent--9);
+}
+
+.tabpanel:focus { outline: none; }
 
 /* ── Panel groups ── */
 .pgroup:not(:first-child) { border-top: 1px solid var(--gray--6); }

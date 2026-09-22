@@ -754,3 +754,29 @@ function openPrint() {
   const w = window.open(URL.createObjectURL(new Blob([buildDoc(exportHtml)], { type: 'text/html' })), '_blank');
   if (w) w.onload = function () { w.focus(); w.print(); };
 }
+
+/* ── Panel tabs ──
+   Table, Style and Print each own a pane; only the selected one is in the
+   document's flow, so hidden controls stay reachable to the code that reads
+   them but out of the way on screen. */
+const tabs = [...document.querySelectorAll('.tabs [role="tab"]')];
+
+function selectTab(tab, focus) {
+  tabs.forEach(t => {
+    const on = t === tab;
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+    document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+  });
+  if (focus) tab.focus();
+}
+
+tabs.forEach((tab, i) => {
+  tab.addEventListener('click', () => selectTab(tab));
+  tab.addEventListener('keydown', e => {
+    const step = { ArrowRight: 1, ArrowLeft: -1, Home: -i, End: tabs.length - 1 - i }[e.key];
+    if (step === undefined) return;
+    e.preventDefault();
+    selectTab(tabs[(i + step + tabs.length) % tabs.length], true);
+  });
+});
