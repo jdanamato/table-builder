@@ -6,8 +6,9 @@ import { Tabs } from '@/components/interior/tabs'
 import { PrintTab } from '@/components/tabs/PrintTab'
 import { StyleTab } from '@/components/tabs/StyleTab'
 import { TableTab } from '@/components/tabs/TableTab'
+import { type CleanReport, cleanMarkup } from '@/lib/clean'
 import { type CssFormat, cssText } from '@/lib/css'
-import { build, cleanMarkup, prettyHtml } from '@/lib/markup'
+import { build, prettyHtml } from '@/lib/markup'
 import { INITIAL_SETTINGS, type Settings, adoptClasses, classPrefix } from '@/lib/mods'
 import { openPrint } from '@/lib/print'
 
@@ -21,6 +22,12 @@ export default function App() {
   const [html, setHtml] = useState('')
   const [settings, setSettings] = useState<Settings>(INITIAL_SETTINGS)
   const [cssFormat, setCssFormat] = useState<CssFormat>('separate')
+
+  /* What the last clean did, and the markup it did it to. Clean rewrites the
+     editor's value, which is what takes a controlled textarea's own undo away,
+     so the way back has to be kept here. */
+  const [report, setReport] = useState<CleanReport | null>(null)
+  const beforeClean = useRef('')
 
   /* The prefix the editor's markup was last written with. Clearing a class has
      to go by the name that is actually in the markup, not the one now typed. */
@@ -66,6 +73,8 @@ export default function App() {
     const adopted = adoptClasses(v, settings, prefixes(settings))
     setSettings(adopted)
 
+    setReport(null)
+
     if (pasting.current) {
       pasting.current = false
       const b = build(v, adopted, prefixes(adopted))
@@ -88,10 +97,17 @@ export default function App() {
   }
 
   function onClean() {
-    const cleaned = cleanMarkup(html)
+    const { html: cleaned, report } = cleanMarkup(html)
+    beforeClean.current = html
+    setReport(report)
     const b = build(cleaned, settings, prefixes(settings))
     setHtml(b.exportHtml || cleaned)
     lastPrefix.current = classPrefix(settings)
+  }
+
+  function onUndoClean() {
+    setHtml(beforeClean.current)
+    setReport(null)
   }
 
   return (
@@ -151,6 +167,8 @@ export default function App() {
             }}
             onFormat={onFormat}
             onClean={onClean}
+            report={report}
+            onUndoClean={onUndoClean}
             cssFormat={cssFormat}
             onCssFormatChange={setCssFormat}
             cssOut={cssOut}

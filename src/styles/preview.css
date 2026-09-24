@@ -106,7 +106,12 @@
   color: var(--slate-12);
 }
 
-.preview-body tr:has(> th[colspan]) > th {
+/* ── Section bands ──
+   Matched the way the export's rules and the clean pass match them: a cell that
+   really spans. `colspan="1"` is a span of one, which scraped markup writes on
+   ordinary cells, so a bare [colspan] would call every row a band. Kept to the
+   body — a spanning row in <thead> is a header grouping. */
+.preview-body tbody tr:has(> :is(th, td)[colspan]:not([colspan="1"])) > :is(th, td) {
   background-color: var(--surface);
   font-weight: 500;
   color: var(--slate-11);
@@ -117,21 +122,27 @@
 /* ── Modifiers ──
    `zebra` and `zebra-cols` are the pre-odd/even names, kept so markup already
    published with them keeps its stripes. */
-.preview-body table:is(.zebra, .zebra-odd) tbody tr:nth-child(odd) { --row-tint: var(--slate-a2); }
-.preview-body table.zebra-even tbody tr:nth-child(even) { --row-tint: var(--slate-a2); }
+/* Bands and the cell-less spacer rows scraped markup is full of are left out
+   of the count: a spacer draws nothing but would flip the phase of every row
+   under it, and a band is a divider rather than a row of data. */
+.preview-body table:is(.zebra, .zebra-odd) tbody tr:nth-child(odd of :not(:empty):not(:has(> :is(th, td)[colspan]:not([colspan="1"])))) { --row-tint: var(--slate-a2); }
+.preview-body table.zebra-even tbody tr:nth-child(even of :not(:empty):not(:has(> :is(th, td)[colspan]:not([colspan="1"])))) { --row-tint: var(--slate-a2); }
 
-.preview-body table.zebra-cols-odd :is(thead, tbody, tfoot) :is(th, td):nth-child(odd):not([colspan]) {
+.preview-body table.zebra-cols-odd :is(thead, tbody, tfoot) tr:not(:has(> :is(th, td)[colspan]:not([colspan="1"]))) > :is(th, td):nth-child(odd):not([colspan]:not([colspan="1"])) {
   --col-tint: var(--slate-a2);
 }
-.preview-body table:is(.zebra-cols, .zebra-cols-even) :is(thead, tbody, tfoot) :is(th, td):nth-child(even):not([colspan]) {
+.preview-body table:is(.zebra-cols, .zebra-cols-even) :is(thead, tbody, tfoot) tr:not(:has(> :is(th, td)[colspan]:not([colspan="1"]))) > :is(th, td):nth-child(even):not([colspan]:not([colspan="1"])) {
   --col-tint: var(--slate-a2);
 }
 
 /* Last of the row tints, so it wins over a stripe at the same specificity.
    A band row is a section label rather than a reading row, so it stays put. */
-.preview-body tbody tr:hover:not(:has(> th[colspan])) { --row-tint: var(--slate-a3); }
+.preview-body tbody tr:hover:not(:has(> :is(th, td)[colspan]:not([colspan="1"]))) { --row-tint: var(--slate-a3); }
 
-.preview-body table.row-lines tbody tr:not(:last-child) > * { border-bottom: 1px solid var(--slate-6); }
+/* Scoped to the last row of the table rather than of each <tbody>: a table
+   split into sections would otherwise lose the line at every boundary. */
+.preview-body table.row-lines tbody tr:not(:empty) > * { border-bottom: 1px solid var(--slate-6); }
+.preview-body table.row-lines tbody:last-of-type tr:nth-last-child(1 of :not(:empty)) > * { border-bottom: 0; }
 
 .preview-body table.col-lines tr > *:not(:last-child) { border-inline-end: 1px solid var(--slate-6); }
 
@@ -156,16 +167,16 @@
 
 /* A cell spanning the table has no room to shift inside its own row, so
    pinning it would do nothing; its label is pinned instead, below. */
-.preview-body.is-sticky-first table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child:not([colspan]) {
+.preview-body.is-sticky-first table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child:not([colspan]:not([colspan="1"])) {
   position: sticky;
   inset-inline-start: 0;
   z-index: 1;
   background-color: var(--surface);
 }
-.preview-body.is-sticky-first table > thead > tr > :is(th, td):first-child:not([colspan]) {
+.preview-body.is-sticky-first table > thead > tr > :is(th, td):first-child:not([colspan]:not([colspan="1"])) {
   z-index: calc(var(--sticky-z, 2) + 10);
 }
-.preview-body.is-sticky-first table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child:not([colspan])::after {
+.preview-body.is-sticky-first table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child:not([colspan]:not([colspan="1"]))::after {
   content: '';
   position: absolute;
   inset-block-start: 0;
@@ -182,7 +193,7 @@
 /* A section band spans every column, so scrolling sideways carries its label
    out of view. Pinning the label keeps the band named, indented by the cell's
    own padding so it does not ride the edge of the scrollport. */
-.preview-body.is-sticky-first table :is(th, td)[colspan] > .band-label {
+.preview-body.is-sticky-first table :is(th, td)[colspan]:not([colspan="1"]) > .band-label {
   position: sticky;
   inset-inline-start: var(--pad-x);
   display: inline-block;

@@ -98,7 +98,9 @@ export function build(html: string, s: Settings, prefixes: string[]): Build {
 
     captionOut = applyCaption(table, s)
 
-    const rows = table.querySelectorAll('tbody tr').length
+    /* Cell-less spacer rows draw nothing, so counting them would report a
+       table half again as tall as the one on screen. */
+    const rows = [...table.querySelectorAll('tbody tr')].filter((tr) => tr.children.length).length
     status = `${rows} rows · ${columnCount(table)} cols`
   }
 
@@ -128,26 +130,6 @@ export function docHead(s: Settings): string {
     (d ? `<p class="doc-desc">${esc(d).replace(/\n/g, '<br>')}</p>` : '') +
     '</div>'
   )
-}
-
-/* ── Clean ──
-   Removes style, class and every other presentational leftover from pasted
-   markup. Only attributes that carry table structure or meaning survive —
-   anything else would fight the modifier classes applied here. */
-const KEEP_ATTRS = new Set([
-  'colspan', 'rowspan', 'headers', 'scope', 'abbr', 'span',
-  'href', 'src', 'alt', 'title', 'lang', 'dir',
-])
-
-export function cleanMarkup(html: string): string {
-  const tmp = document.createElement('div')
-  tmp.innerHTML = html
-  tmp.querySelectorAll('*').forEach((el) => {
-    for (const a of [...el.attributes]) {
-      if (!KEEP_ATTRS.has(a.name.toLowerCase())) el.removeAttribute(a.name)
-    }
-  })
-  return tmp.innerHTML
 }
 
 /* ── Format ──

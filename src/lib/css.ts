@@ -7,14 +7,33 @@ import { ALL_MODIFIERS, EMITTED, type Settings, classPrefix, getClasses } from '
    These are deliberately not the preview's rules: the preview styles against
    the Radix scales on this page, while what goes out has to stand alone
    anywhere it is pasted, so it carries literal colours. */
+/* ── What counts as a band row ──
+   A row carrying a cell that really spans. `colspan="1"` is a span of one,
+   which scraped markup writes on ordinary cells, so testing a bare [colspan]
+   would call every row a band. Bands are written as <td> as often as <th>. */
+const BAND = ':has(> :is(th,td)[colspan]:not([colspan="1"]))'
+
+/* A row the stripes should count: it has cells, and it is data rather than a
+   divider. Scraped markup is full of cell-less spacer rows, which draw nothing
+   but would otherwise flip the stripe phase for every row under them. */
+const DATA_ROW = `:not(:empty):not(${BAND})`
+
 const CSS_BASE = [
-  'div:has(> table){--tr:10px;overflow:hidden;max-width:100%;border:1px solid #e4e4e7;border-radius:var(--tr);background:#fafafa}',
+  'div:has(> table){--tr:10px;overflow:auto;max-width:100%;border:1px solid #e4e4e7;border-radius:var(--tr);background:#fafafa}',
   'table{width:100%;max-width:100%;table-layout:auto;border-collapse:separate;border-spacing:0;font-size:12px;font-variant-numeric:tabular-nums}',
   'th,td{padding:8px 12px;vertical-align:middle;text-align:start;overflow-wrap:break-word}',
   'thead :is(th,td){font-weight:600;background:#fafafa;border-bottom:1px solid #e4e4e7;font-size:11px;color:#52525b}',
   'tfoot :is(th,td){font-weight:600;border-top:1px solid #e4e4e7}',
   'tbody tr:hover > *{background:rgba(0,0,0,.04)}',
-  'tr:has(> th[colspan]) > th{background:#fafafa;font-weight:700;color:#52525b;border-bottom:1px solid #e4e4e7}',
+]
+
+/* ── Section bands ──
+   Scoped to the body: a spanning row in <thead> is a header grouping, and keeps
+   the header's own styling. The stripe rules skip these rows rather than losing
+   to them, so a band reads the same whether or not stripes are on. */
+const CSS_BAND = [
+  `tbody tr${BAND} > :is(th,td)` +
+    '{background:#fafafa;font-weight:700;color:#52525b;border-bottom:1px solid #e4e4e7}',
 ]
 
 const CSS_CAPTION = [
@@ -26,17 +45,30 @@ const CSS_SR_ONLY = [
 ]
 
 const CSS_MODS: Record<string, string[]> = {
-  'zebra-odd': ['.{{zebra-odd}} tbody tr:nth-child(odd) > *{background:rgba(0,0,0,.025)}'],
-  'zebra-even': ['.{{zebra-even}} tbody tr:nth-child(even) > *{background:rgba(0,0,0,.025)}'],
+  /* `of :not(:empty)` leaves the cell-less spacer rows scraped markup is full
+     of out of the count — they draw nothing, but they would otherwise flip the
+     stripe phase for every row under them. */
+  'zebra-odd': [
+    `.{{zebra-odd}} tbody tr:nth-child(odd of ${DATA_ROW}) > *{background:rgba(0,0,0,.025)}`,
+  ],
+  'zebra-even': [
+    `.{{zebra-even}} tbody tr:nth-child(even of ${DATA_ROW}) > *{background:rgba(0,0,0,.025)}`,
+  ],
   /* Overlaid as an image so a column stripe composites over the row stripe —
      and over the header's own background — instead of replacing it. */
   'zebra-cols-odd': [
-    '.{{zebra-cols-odd}} :is(thead,tbody,tfoot) :is(th,td):nth-child(odd):not([colspan]){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}',
+    `.{{zebra-cols-odd}} :is(thead,tbody,tfoot) tr:not(${BAND}) > :is(th,td):nth-child(odd):not([colspan]:not([colspan="1"])){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}`,
   ],
   'zebra-cols-even': [
-    '.{{zebra-cols-even}} :is(thead,tbody,tfoot) :is(th,td):nth-child(even):not([colspan]){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}',
+    `.{{zebra-cols-even}} :is(thead,tbody,tfoot) tr:not(${BAND}) > :is(th,td):nth-child(even):not([colspan]:not([colspan="1"])){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}`,
   ],
-  'row-lines': ['.{{row-lines}} tbody tr:not(:last-child) > *{border-bottom:1px solid #e4e4e7}'],
+  /* Scoped to the last row of the table rather than of each <tbody>: a table
+     split into sections would otherwise lose the line at every boundary. The
+     spacer rows are skipped so they cannot draw a second line under a row. */
+  'row-lines': [
+    '.{{row-lines}} tbody tr:not(:empty) > *{border-bottom:1px solid #e4e4e7}',
+    '.{{row-lines}} tbody:last-of-type tr:nth-last-child(1 of :not(:empty)) > *{border-bottom:0}',
+  ],
   'col-lines': ['.{{col-lines}} tr > *:not(:last-child){border-right:1px solid #e4e4e7}'],
   /* The header cells align with the figures under them, so a column reads
      straight down; the first column labels the row and keeps its own side. */
@@ -104,7 +136,7 @@ export function activeRules(s: Settings, captionOut: boolean): string[] {
   for (const c of getClasses(s)) {
     if (CSS_MODS[c]) rules.push(...CSS_MODS[c])
   }
-  rules.push(...CSS_PRINT)
+  rules.push(...CSS_BAND, ...CSS_PRINT)
 
   const p = classPrefix(s)
   return rules.map((r) => r.replace(/\{\{([\w-]+)\}\}/g, (_, n) => p + n))

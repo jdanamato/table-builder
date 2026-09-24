@@ -26,7 +26,9 @@ function layoutSticky(root: HTMLElement) {
     offset += row.getBoundingClientRect().height
   })
 
-  table.querySelectorAll('tr > :first-child[colspan]').forEach((cell) => {
+  /* A span of one is no span: scraped markup writes colspan="1" on ordinary
+     cells, and wrapping every one of those would be a label around nothing. */
+  table.querySelectorAll('tr > :first-child[colspan]:not([colspan="1"])').forEach((cell) => {
     if (cell.firstElementChild?.classList.contains('band-label')) return
     const label = document.createElement('span')
     label.className = 'band-label'
