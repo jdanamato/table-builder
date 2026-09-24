@@ -1,0 +1,103 @@
+/* ── Radix Colors ──
+   Each scale ships as `:root` (light) and `.dark` declarations of the same
+   variable names, so the semantic layer below is written once and re-resolves
+   per theme. Only the steps this app reaches for are imported. */
+@import "@radix-ui/colors/slate.css";
+@import "@radix-ui/colors/slate-alpha.css";
+@import "@radix-ui/colors/slate-dark.css";
+@import "@radix-ui/colors/slate-dark-alpha.css";
+@import "@radix-ui/colors/blue.css";
+@import "@radix-ui/colors/blue-dark.css";
+@import "@radix-ui/colors/red.css";
+@import "@radix-ui/colors/red-dark.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── shadcn tokens over the Radix scales ──
+   Radix's steps have fixed jobs, which is what makes the mapping mechanical:
+   1–2 backgrounds · 3–5 component fill / hover / active · 6–8 borders
+   (8 = focus ring) · 9–10 solid · 11–12 text. */
+:root {
+  --background: var(--slate-2);
+  --foreground: var(--slate-12);
+
+  /* Panels sit a step off the page rather than on it. */
+  --card: var(--slate-1);
+  --card-foreground: var(--slate-12);
+  --popover: var(--slate-1);
+  --popover-foreground: var(--slate-12);
+
+  /* Radix ships no contrast token outside Radix Themes, so the text colour
+     that rides on step 9 is named here. Blue takes white; amber, yellow, lime,
+     mint and sky would each need black instead. */
+  --primary: var(--blue-9);
+  --primary-foreground: #fff;
+
+  --secondary: var(--slate-3);
+  --secondary-foreground: var(--slate-12);
+  --muted: var(--slate-3);
+  --muted-foreground: var(--slate-11);
+
+  /* shadcn's `--accent` is the subtle hover fill, not the brand colour. */
+  --accent: var(--slate-4);
+  --accent-foreground: var(--slate-12);
+
+  --destructive: var(--red-9);
+  --destructive-foreground: #fff;
+
+  --border: var(--slate-6);
+  --input: var(--slate-7);
+  --ring: var(--blue-8);
+
+  --radius: 0.625rem;
+}
+
+/* Dark reverses the elevation: step 1 is the darkest, so the page takes it and
+   panels come forward. Every other token re-resolves on its own. */
+.dark {
+  --background: var(--slate-1);
+  --card: var(--slate-2);
+  --popover: var(--slate-2);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: "Geist Variable", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+}

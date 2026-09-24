@@ -1,2 +1,19 @@
 # ShipStudio metadata
 .shipstudio/
+
+# Build / deps
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?
+
+# Logs
+*.log
+npm-debug.log*
