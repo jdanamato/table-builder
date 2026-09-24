@@ -2,8 +2,8 @@ import { useRef, useState } from 'react'
 import { InfoTip } from './InfoTip'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { CssFormat } from '@/lib/css'
 import { cn } from 'cn'
 
@@ -100,21 +100,18 @@ export function CodePanel({
         <div className="flex items-center justify-between gap-3">
           <SourceLabel>{inline ? 'Table HTML, styles inline' : 'Table CSS'}</SourceLabel>
           <div className="flex items-center gap-1.5">
-            <ToggleGroup
-              size="sm"
-              variant="outline"
-              value={[cssFormat]}
-              onValueChange={(next) => {
-                /* Base UI's toggle group is multi-select, so the single choice
-                   is enforced here: the newly pressed item wins and pressing
-                   the current one again is ignored, never leaving it empty. */
-                const picked = next.find((v) => v !== cssFormat)
-                if (picked) onCssFormatChange(picked as CssFormat)
-              }}
+            {/* Tabs rather than a toggle group: the two are exclusive and one
+                is always on, which is a tab's contract, not a toggle's. The
+                panels live below in the <pre>, so only the list is rendered. */}
+            <Tabs
+              value={cssFormat}
+              onValueChange={(next) => onCssFormatChange(next as CssFormat)}
             >
-              <ToggleGroupItem value="separate">Style tag</ToggleGroupItem>
-              <ToggleGroupItem value="inline">Inline</ToggleGroupItem>
-            </ToggleGroup>
+              <TabsList className="h-7">
+                <TabsTrigger value="separate">Style tag</TabsTrigger>
+                <TabsTrigger value="inline">Inline</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <InfoTip>
               Style tag: the rules wrapped in a <code>&lt;style&gt;</code> block, to paste under the
               table code. Inline: the same rules written onto the elements themselves as style

@@ -2,14 +2,20 @@ import { useMemo, useRef, useState } from 'react'
 import { CodePanel } from '@/components/CodePanel'
 import { PreviewPanel } from '@/components/PreviewPanel'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Tabs } from '@/components/interior/tabs'
 import { PrintTab } from '@/components/tabs/PrintTab'
 import { StyleTab } from '@/components/tabs/StyleTab'
 import { TableTab } from '@/components/tabs/TableTab'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { type CssFormat, cssText } from '@/lib/css'
 import { build, cleanMarkup, prettyHtml } from '@/lib/markup'
 import { INITIAL_SETTINGS, type Settings, adoptClasses, classPrefix } from '@/lib/mods'
 import { openPrint } from '@/lib/print'
+
+const PANEL_TABS = [
+  { value: 'table', label: 'Table' },
+  { value: 'style', label: 'Style' },
+  { value: 'print', label: 'Print' },
+]
 
 export default function App() {
   const [html, setHtml] = useState('')
@@ -105,33 +111,28 @@ export default function App() {
 
       <div className="grid items-start gap-4 lg:grid-cols-[300px_1fr]">
         {/* Controls, split across three tabs so the panel stops growing past
-            the preview. */}
+            the preview. The tab component draws the card itself. */}
         <Tabs
+          items={PANEL_TABS}
           defaultValue="table"
-          className="overflow-hidden rounded-xl border bg-card max-lg:order-2"
-        >
-          <TabsList className="w-full rounded-none border-b bg-muted/40 p-1.5">
-            <TabsTrigger value="table">Table</TabsTrigger>
-            <TabsTrigger value="style">Style</TabsTrigger>
-            <TabsTrigger value="print">Print</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="table">
-            <TableTab settings={settings} update={update} />
-          </TabsContent>
-          <TabsContent value="style">
-            <StyleTab settings={settings} update={update} setView={setView} />
-          </TabsContent>
-          <TabsContent value="print">
-            <PrintTab
-              settings={settings}
-              update={update}
-              setView={setView}
-              canPrint={!!built.exportHtml}
-              onPrint={() => openPrint(built.exportHtml, settings, built.captionOut)}
-            />
-          </TabsContent>
-        </Tabs>
+          label="Controls"
+          className="max-lg:order-2"
+          renderPanel={(tab) => {
+            if (tab === 'style')
+              return <StyleTab settings={settings} update={update} setView={setView} />
+            if (tab === 'print')
+              return (
+                <PrintTab
+                  settings={settings}
+                  update={update}
+                  setView={setView}
+                  canPrint={!!built.exportHtml}
+                  onPrint={() => openPrint(built.exportHtml, settings, built.captionOut)}
+                />
+              )
+            return <TableTab settings={settings} update={update} />
+          }}
+        />
 
         {/* Preview stacked over the source editor, so pasted markup stays in
             view while the table renders above it. */}
