@@ -2,7 +2,7 @@
    The preview renders markup the person pasted, so there are no elements here
    to hang utility classes on: these rules are written against the tags
    themselves, scoped to `.preview-body`. They read the Radix scales directly
-   rather than the shadcn tokens, because the table needs steps — an alpha tint
+   rather than the semantic tokens, because the table needs steps — an alpha tint
    for a stripe, step 7 for a divider — that the semantic layer does not name.
 
    Class names are bare (`zebra-odd`, not `ad-zebra-odd`): the export applies

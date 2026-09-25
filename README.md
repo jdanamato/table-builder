@@ -8,7 +8,7 @@ to PDF with a header, title and footer.
 | Layer | Choice |
 | --- | --- |
 | Build | Vite + React + TypeScript |
-| Components | [shadcn/ui](https://ui.shadcn.com) on [Base UI](https://base-ui.com) primitives |
+| Components | [Base UI](https://base-ui.com) primitives, styled in `src/components/ui` |
 | Styling | Tailwind CSS v4 |
 | Colour | [Radix Colors](https://www.radix-ui.com/colors) |
 
@@ -20,7 +20,7 @@ npm run build
 
 ## Colour
 
-shadcn's semantic tokens (`--background`, `--primary`, `--border`, …) are defined over Radix's
+Semantic tokens (`--background`, `--primary`, `--border`, …) are defined over Radix's
 12-step scales in `src/styles/theme.css`. Radix ships each scale as `:root` and `.dark`
 declarations of the same variable names, so the semantic layer is written once and re-resolves
 per theme; only the page/panel elevation pair is overridden for dark, since step 1 is the
@@ -28,7 +28,7 @@ lightest colour in one theme and the darkest in the other.
 
 Two things worth knowing before changing the accent:
 
-- `--accent` is shadcn's subtle hover fill (step 4), **not** the brand colour. The brand is
+- `--accent` is the subtle hover fill (step 4), **not** the brand colour. The brand is
   `--primary` (step 9).
 - Radix ships no contrast token outside Radix Themes, so `--primary-foreground` is named by
   hand. Blue takes white; amber, yellow, lime, mint and sky would each need black.
@@ -44,7 +44,7 @@ src/
     print.ts     the standalone document sent to the print dialog
   components/    the panel, preview and code views
   styles/
-    theme.css    Radix Colors mapped onto shadcn's tokens
+    theme.css    Radix Colors mapped onto semantic tokens
     preview.css  the preview's table rules
 ```
 
