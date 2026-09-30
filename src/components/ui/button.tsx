@@ -4,7 +4,7 @@ import { cn } from "cn"
 const variants = {
   default: "bg-primary text-primary-foreground hover:bg-primary/80",
   outline:
-    "border-border bg-background hover:bg-muted aria-expanded:bg-muted dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+    "border-input bg-background hover:border-input-hover hover:bg-muted aria-expanded:bg-muted dark:bg-input/30 dark:hover:bg-input/50",
   ghost: "hover:bg-muted aria-expanded:bg-muted dark:hover:bg-muted/50",
 }
 

@@ -19,7 +19,7 @@ const BAND = ':has(> :is(th,td)[colspan]:not([colspan="1"]))'
 const DATA_ROW = `:not(:empty):not(${BAND})`
 
 const CSS_BASE = [
-  'div:has(> table){--tr:10px;overflow:auto;max-width:100%;border:1px solid #e4e4e7;border-radius:var(--tr);background:#fafafa}',
+  'div:has(> table){--tr:10px;overflow:auto;max-width:100%;border:1px solid #e4e4e7;border-radius:var(--tr)}',
   'table{width:100%;max-width:100%;table-layout:auto;border-collapse:separate;border-spacing:0;font-size:12px;font-variant-numeric:tabular-nums}',
   'th,td{padding:8px 12px;vertical-align:middle;text-align:start;overflow-wrap:break-word}',
   'thead :is(th,td){font-weight:600;background:#fafafa;border-bottom:1px solid #e4e4e7;font-size:11px;color:#52525b}',
@@ -76,7 +76,7 @@ const CSS_MODS: Record<string, string[]> = {
     '.{{numeric}} :is(thead,tbody,tfoot) :is(th,td){text-align:right}',
     '.{{numeric}} :is(thead,tbody,tfoot) :is(th,td):first-child{text-align:left}',
   ],
-  bare: ['div:has(> table.{{bare}}){background:transparent;border:none}'],
+  bare: ['div:has(> table.{{bare}}){border:none}'],
   'size-1': ['.{{size-1}} :is(thead,tbody,tfoot) :is(th,td){padding:5px 8px}'],
   'size-3': ['.{{size-3}} :is(thead,tbody,tfoot) :is(th,td){padding:12px 16px}'],
   'radius-0': ['div:has(> table.{{radius-0}}){--tr:0}'],

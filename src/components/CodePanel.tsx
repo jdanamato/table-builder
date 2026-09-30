@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { CssFormat } from '@/lib/css'
 import { cn } from 'cn'
 
-const PLACEHOLDER = `<div>
+const PLACEHOLDER = `<div className="h-dvh">
   <table>
     <thead>
       <tr><th>Col A</th><th>Col B</th></tr>
@@ -22,6 +22,55 @@ const PLACEHOLDER = `<div>
 
 function SourceLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[13px] font-medium text-foreground">{children}</p>
+}
+
+function CopyIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3.25" y="0.75" width="8" height="8" rx="1.5" ry="1.5" />
+      <path d="m8.25,11.25H2.25c-.828,0-1.5-.672-1.5-1.5V3.75" />
+    </svg>
+  )
+}
+
+/* ── Copy, floated ──
+   The button sits over the bottom right of the thing it copies, so there is no
+   guessing which output a header-row button belongs to. It is hidden until the
+   block is hovered — and until it is focused, so tabbing still reaches it. */
+function CopyButton({ text, onFallback }: { text: string; onFallback: () => void }) {
+  const [label, setLabel] = useState('Copy')
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setLabel('Copied')
+    } catch {
+      // No clipboard access (an insecure origin, usually) — select it instead
+      onFallback()
+      setLabel('Press ⌘C')
+    }
+    setTimeout(() => setLabel('Copy'), 1600)
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="xs"
+      onClick={copy}
+      className="absolute right-2 bottom-2 opacity-0 shadow-xs transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+    >
+      <CopyIcon />
+      {label}
+    </Button>
+  )
 }
 
 /* ── What the clean did ──
@@ -78,27 +127,18 @@ export function CodePanel({
   onCssFormatChange: (v: CssFormat) => void
   cssOut: string
 }) {
-  const [copyLabel, setCopyLabel] = useState('Copy')
   const preRef = useRef<HTMLPreElement>(null)
+  const htmlRef = useRef<HTMLTextAreaElement>(null)
   const inline = cssFormat === 'inline'
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(cssOut)
-      setCopyLabel('Copied')
-    } catch {
-      // No clipboard access (an insecure origin, usually) — select it instead
-      const pre = preRef.current
-      if (pre) {
-        const r = document.createRange()
-        r.selectNodeContents(pre)
-        const s = getSelection()
-        s?.removeAllRanges()
-        s?.addRange(r)
-      }
-      setCopyLabel('Press ⌘C')
-    }
-    setTimeout(() => setCopyLabel('Copy'), 1600)
+  function selectPre() {
+    const pre = preRef.current
+    if (!pre) return
+    const r = document.createRange()
+    r.selectNodeContents(pre)
+    const s = getSelection()
+    s?.removeAllRanges()
+    s?.addRange(r)
   }
 
   return (
@@ -125,14 +165,20 @@ export function CodePanel({
             </InfoTip>
           </div>
         </div>
-        <Textarea
-          value={html}
-          onChange={(e) => onHtmlChange(e.target.value)}
-          onPaste={onPaste}
-          placeholder={PLACEHOLDER}
-          spellCheck={false}
-          className="max-h-72 min-h-44 resize-y font-mono text-xs leading-relaxed"
-        />
+        <div className="group relative">
+          <Textarea
+            ref={htmlRef}
+            value={html}
+            onChange={(e) => onHtmlChange(e.target.value)}
+            onPaste={onPaste}
+            placeholder={PLACEHOLDER}
+            spellCheck={false}
+            className="max-h-72 min-h-44 resize-none font-mono text-xs leading-relaxed"
+          />
+          {html.trim() ? (
+            <CopyButton text={html} onFallback={() => htmlRef.current?.select()} />
+          ) : null}
+        </div>
         {report && <CleanReportBlock report={report} onUndo={onUndoClean} />}
       </div>
 
@@ -165,21 +211,21 @@ export function CodePanel({
               field. Inline output carries the whole table, so it replaces the markup above rather
               than joining it.
             </InfoTip>
-            <Button variant="outline" size="xs" onClick={copy}>
-              {copyLabel}
-            </Button>
           </div>
         </div>
-        <pre
-          ref={preRef}
-          tabIndex={0}
-          className={cn(
-            'max-h-72 overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-[11.5px] leading-relaxed text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-            inline ? 'whitespace-pre-wrap [overflow-wrap:anywhere]' : 'whitespace-pre',
-          )}
-        >
-          {cssOut}
-        </pre>
+        <div className="group relative">
+          <pre
+            ref={preRef}
+            tabIndex={0}
+            className={cn(
+              'max-h-72 overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-[11.5px] leading-relaxed text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+              inline ? 'whitespace-pre-wrap [overflow-wrap:anywhere]' : 'whitespace-pre',
+            )}
+          >
+            {cssOut}
+          </pre>
+          {cssOut.trim() ? <CopyButton text={cssOut} onFallback={selectPre} /> : null}
+        </div>
       </div>
     </section>
   )

@@ -18,7 +18,6 @@
   max-height: clamp(180px, 46vh, 520px); /* leave the source editor in view */
   width: 100%;
   overscroll-behavior: contain;
-  background: var(--slate-2);
   border: 1px solid var(--slate-6);
   border-radius: var(--tr);
 }
@@ -38,8 +37,13 @@
   --pad-x: 12px;
 
   /* The opaque plane a sticky cell sits on. Anything pinned needs a solid
-     fill, or the columns sliding beneath it read straight through. */
-  --surface: var(--slate-2);
+     fill, or the columns sliding beneath it read straight through. The card
+     wrapper draws none, so what sits behind the table is the panel itself. */
+  --surface: var(--card);
+
+  /* The tint a header or band cell carries. Kept apart from `--surface`: the
+     two were one value only while the wrapper's fill matched the header's. */
+  --fill-header: var(--slate-2);
 
   /* Declared here rather than on the cells: a value set on the cell itself
      would out-rank the one a row hands down, and the row stripe would never
@@ -68,7 +72,7 @@
 
 .preview-body thead :is(th, td) {
   font-weight: 500;
-  background-color: var(--surface);
+  background-color: var(--fill-header);
   border-bottom: 1px solid var(--slate-6);
   color: var(--slate-11);
   font-size: 12px;
@@ -112,7 +116,7 @@
    ordinary cells, so a bare [colspan] would call every row a band. Kept to the
    body — a spanning row in <thead> is a header grouping. */
 .preview-body tbody tr:has(> :is(th, td)[colspan]:not([colspan="1"])) > :is(th, td) {
-  background-color: var(--surface);
+  background-color: var(--fill-header);
   font-weight: 500;
   color: var(--slate-11);
   font-size: 12px;
@@ -162,7 +166,7 @@
   position: sticky;
   top: var(--sticky-top, 0px);
   z-index: var(--sticky-z, 2);
-  background-color: var(--surface);
+  background-color: var(--fill-header);
 }
 
 /* A cell spanning the table has no room to shift inside its own row, so
@@ -175,6 +179,7 @@
 }
 .preview-body.is-sticky-first table > thead > tr > :is(th, td):first-child:not([colspan]:not([colspan="1"])) {
   z-index: calc(var(--sticky-z, 2) + 10);
+  background-color: var(--fill-header);
 }
 .preview-body.is-sticky-first table > :is(thead, tbody, tfoot) > tr > :is(th, td):first-child:not([colspan]:not([colspan="1"]))::after {
   content: '';
@@ -200,11 +205,8 @@
 }
 
 /* The wrapper already clips (overflow), so its radius is what rounds the
-   table. Dropping the card keeps that rounding — only the fill and border go. */
-.preview-body div:has(> table.bare) { background: transparent; border: none; }
-/* Without the card there is no fill behind the table, so a pinned cell has to
-   take its opaque plane from the panel it is sitting on. */
-.preview-body table.bare { --surface: var(--card); }
+   table. Dropping the card keeps that rounding — only the border goes. */
+.preview-body div:has(> table.bare) { border: none; }
 
 .preview-body div:has(> table.radius-0) { --tr: 0; }
 .preview-body div:has(> table.radius-1) { --tr: 6px; }

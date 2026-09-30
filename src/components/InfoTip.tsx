@@ -19,7 +19,11 @@ export function InfoTip({ children }: { children: React.ReactNode }) {
       >
         <InfoIcon className="size-3.5" />
       </TooltipTrigger>
-      <TooltipContent className="max-w-72 text-balance">{children}</TooltipContent>
+      {/* The popup is a flex row by default, which would turn each text run and
+          each inline <code> into its own column. Prose needs a block. */}
+      <TooltipContent className="block max-w-72 py-2 text-pretty leading-relaxed [&_code]:rounded-sm [&_code]:bg-background/15 [&_code]:px-1 [&_code]:py-px [&_code]:font-mono [&_code]:text-[0.9em]">
+        {children}
+      </TooltipContent>
     </Tooltip>
   )
 }

@@ -37,8 +37,13 @@
   --accent: var(--slate-4);
   --accent-foreground: var(--slate-12);
 
+  /* The three border steps split by job: 6 draws the borders nothing reaches
+     for — cards, dividers, panel edges — while 7 and 8 are the rest and hover
+     of anything interactive, so a control announces itself before it is used
+     and again under the pointer. */
   --border: var(--slate-6);
   --input: var(--slate-7);
+  --input-hover: var(--slate-8);
   --ring: var(--blue-8);
 
   --radius: 0.625rem;
@@ -66,6 +71,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-input-hover: var(--input-hover);
   --color-ring: var(--ring);
 
   --radius-sm: calc(var(--radius) - 4px);
