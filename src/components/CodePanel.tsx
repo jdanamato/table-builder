@@ -9,16 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import type { CssFormat } from '@/lib/css'
 import { cn } from 'cn'
 
-const PLACEHOLDER = `<div className="h-dvh">
-  <table>
-    <thead>
-      <tr><th>Col A</th><th>Col B</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>Value</td><td>Value</td></tr>
-    </tbody>
-  </table>
-</div>`
+const PLACEHOLDER = 'Paste your table HTML here to start'
 
 function SourceLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-[13px] font-medium text-foreground">{children}</p>

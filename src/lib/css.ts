@@ -7,16 +7,32 @@ import { ALL_MODIFIERS, EMITTED, type Settings, classPrefix, getClasses } from '
    These are deliberately not the preview's rules: the preview styles against
    the Radix scales on this page, while what goes out has to stand alone
    anywhere it is pasted, so it carries literal colours. */
-/* ── What counts as a band row ──
-   A row carrying a cell that really spans. `colspan="1"` is a span of one,
-   which scraped markup writes on ordinary cells, so testing a bare [colspan]
-   would call every row a band. Bands are written as <td> as often as <th>. */
-const BAND = ':has(> :is(th,td)[colspan]:not([colspan="1"]))'
+/* ── Spanning cells, and bands ──
+   Two questions that look like one. `colspan="1"` is a span of one, which
+   scraped markup writes on ordinary cells, so both tests have to discount it or
+   every row answers yes.
+
+   `HAS_SPAN` asks whether a row carries a cell that really spans. A row like
+   that has no settled stripe phase and no even column grid to tint, so the
+   stripe rules sit it out — true of a spanning cell wherever it sits in the row.
+
+   `BAND` asks the narrower question of whether the row *is* a band: one cell,
+   spanning the width, which is how a section divider gets written. It has to be
+   narrower, because a row of data can carry a spanning cell without being a
+   divider — a filler cell holding the slots under a rowspan is the usual case,
+   and reading those as dividers is how a scraped recipe grid comes back with
+   two of its ingredient rows greyed out. What the narrower test gives up is a
+   band written with a trailing empty cell, which then reads as ordinary data.
+   That is the rarer markup and much the quieter mistake.
+
+   Bands are written as <td> as often as <th>. */
+const HAS_SPAN = ':has(> :is(th,td)[colspan]:not([colspan="1"]))'
+export const BAND = `${HAS_SPAN}:not(:has(> :is(th,td):nth-child(2)))`
 
 /* A row the stripes should count: it has cells, and it is data rather than a
    divider. Scraped markup is full of cell-less spacer rows, which draw nothing
    but would otherwise flip the stripe phase for every row under them. */
-const DATA_ROW = `:not(:empty):not(${BAND})`
+const DATA_ROW = `:not(:empty):not(${HAS_SPAN})`
 
 const CSS_BASE = [
   'div:has(> table){--tr:10px;overflow:auto;max-width:100%;border:1px solid #e4e4e7;border-radius:var(--tr)}',
@@ -57,10 +73,10 @@ const CSS_MODS: Record<string, string[]> = {
   /* Overlaid as an image so a column stripe composites over the row stripe —
      and over the header's own background — instead of replacing it. */
   'zebra-cols-odd': [
-    `.{{zebra-cols-odd}} :is(thead,tbody,tfoot) tr:not(${BAND}) > :is(th,td):nth-child(odd):not([colspan]:not([colspan="1"])){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}`,
+    `.{{zebra-cols-odd}} :is(thead,tbody,tfoot) tr:not(${HAS_SPAN}) > :is(th,td):nth-child(odd):not([colspan]:not([colspan="1"])){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}`,
   ],
   'zebra-cols-even': [
-    `.{{zebra-cols-even}} :is(thead,tbody,tfoot) tr:not(${BAND}) > :is(th,td):nth-child(even):not([colspan]:not([colspan="1"])){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}`,
+    `.{{zebra-cols-even}} :is(thead,tbody,tfoot) tr:not(${HAS_SPAN}) > :is(th,td):nth-child(even):not([colspan]:not([colspan="1"])){background-image:linear-gradient(rgba(0,0,0,.025),rgba(0,0,0,.025))}`,
   ],
   /* Scoped to the last row of the table rather than of each <tbody>: a table
      split into sections would otherwise lose the line at every boundary. The

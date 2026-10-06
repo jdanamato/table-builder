@@ -111,11 +111,19 @@
 }
 
 /* ── Section bands ──
-   Matched the way the export's rules and the clean pass match them: a cell that
-   really spans. `colspan="1"` is a span of one, which scraped markup writes on
-   ordinary cells, so a bare [colspan] would call every row a band. Kept to the
-   body — a spanning row in <thead> is a header grouping. */
-.preview-body tbody tr:has(> :is(th, td)[colspan]:not([colspan="1"])) > :is(th, td) {
+   A band is a row that *is* one spanning cell, the way a section divider gets
+   written — not merely a row that carries one, which is what a filler cell
+   holding the slots under a rowspan looks like. `colspan="1"` is a span of one,
+   which scraped markup writes on ordinary cells. Kept to the body — a spanning
+   row in <thead> is a header grouping.
+
+   This is `BAND` in `src/lib/css.ts`, which is the rule the export carries. CSS
+   has no way to share a selector between a stylesheet and a module, so the two
+   are kept in step by hand; the stripe rules below deliberately differ. */
+.preview-body
+  tbody
+  tr:has(> :is(th, td)[colspan]:not([colspan="1"])):not(:has(> :is(th, td):nth-child(2)))
+  > :is(th, td) {
   background-color: var(--fill-header);
   font-weight: 500;
   color: var(--slate-11);
@@ -126,9 +134,11 @@
 /* ── Modifiers ──
    `zebra` and `zebra-cols` are the pre-odd/even names, kept so markup already
    published with them keeps its stripes. */
-/* Bands and the cell-less spacer rows scraped markup is full of are left out
-   of the count: a spacer draws nothing but would flip the phase of every row
-   under it, and a band is a divider rather than a row of data. */
+/* Left out of the count: the cell-less spacer rows scraped markup is full of,
+   which draw nothing but would flip the phase of every row under them, and any
+   row carrying a spanning cell. That second test is looser than the band rule
+   above, and meant to be — a spanning cell leaves the stripe phase unsettled
+   and the column grid uneven whether or not the row is a divider. */
 .preview-body table:is(.zebra, .zebra-odd) tbody tr:nth-child(odd of :not(:empty):not(:has(> :is(th, td)[colspan]:not([colspan="1"])))) { --row-tint: var(--slate-a2); }
 .preview-body table.zebra-even tbody tr:nth-child(even of :not(:empty):not(:has(> :is(th, td)[colspan]:not([colspan="1"])))) { --row-tint: var(--slate-a2); }
 

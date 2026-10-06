@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { cn } from 'cn'
+import { BAND } from '@/lib/css'
 
 /* ── Sticky layout ──
    A header of several rows cannot pin them all to the same offset — they would
@@ -26,9 +27,12 @@ function layoutSticky(root: HTMLElement) {
     offset += row.getBoundingClientRect().height
   })
 
-  /* A span of one is no span: scraped markup writes colspan="1" on ordinary
-     cells, and wrapping every one of those would be a label around nothing. */
-  table.querySelectorAll('tr > :first-child[colspan]:not([colspan="1"])').forEach((cell) => {
+  /* Only a true band is labelled. The wrapper exists so a divider stays named
+     when the table is scrolled sideways, and it is read off the same `BAND` the
+     styling uses — a row of data that merely carries a spanning cell has its
+     own first column to name it, and wrapping that would be a label around
+     nothing. */
+  table.querySelectorAll(`tbody tr${BAND} > :is(th, td):first-child`).forEach((cell) => {
     if (cell.firstElementChild?.classList.contains('band-label')) return
     const label = document.createElement('span')
     label.className = 'band-label'
