@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "./styles/theme.css";
+@import "./styles/preview.css";
