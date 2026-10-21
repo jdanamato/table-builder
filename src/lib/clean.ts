@@ -23,13 +23,164 @@ export type CleanReport = {
 
 export type CleanResult = { html: string; report: CleanReport }
 
-/* Attributes that carry table structure or meaning. Everything else is
-   presentational and would fight the modifier classes applied here. */
-const KEEP_ATTRS = new Set([
-  'colspan', 'rowspan', 'headers', 'scope', 'abbr', 'span',
-  'href', 'src', 'alt', 'title', 'lang', 'dir',
-])
+/* Attributes that carry table structure or meaning, each with why it stays.
+   Everything else is presentational and would fight the modifier classes
+   applied here. The reasons are shown in the app, so the list explains itself
+   to the person whose markup it is changing. */
+export const KEPT_ATTRS: Record<string, string> = {
+  colspan: 'How many columns a cell covers. Removing it shifts every later cell left.',
+  rowspan: 'How many rows a cell covers. Removing it shifts the rows below.',
+  headers: 'Ties a data cell to its header cells for screen readers.',
+  scope: 'Says whether a header labels its row or its column, for screen readers.',
+  abbr: 'A short form of a long header, read out in its place.',
+  span: 'How many columns a <col> or <colgroup> covers.',
+  href: 'Where a link goes.',
+  src: 'The image or media an element shows.',
+  alt: 'The text that stands in for an image.',
+  title: 'Text the element carries that appears nowhere else on the page.',
+  lang: 'The language of the text, which sets pronunciation and hyphenation.',
+  dir: 'Text direction, which right-to-left content needs to read correctly.',
+}
 
+/* How a link opens. Kept only alongside an href: on an element without one
+   they describe a link that goes nowhere, and would hold it back from being
+   unwrapped into its text. */
+export const LINK_ATTRS: Record<string, string> = {
+  target: 'Whether the link opens in a new tab. Kept only on links with an href.',
+  rel: 'How the linked page relates to this one, e.g. nofollow. Kept only on links with an href.',
+}
+
+const KEEP_ATTRS = new Set(Object.keys(KEPT_ATTRS))
+const LINK_ATTR_NAMES = new Set(Object.keys(LINK_ATTRS))
+
+/* ── The options, in words ──
+   Everything Clean can do, in the order it does it, for the dialog where the
+   person picks what runs. `why` is the helper text shown under a rule; a rule
+   without one shows only what it does. Its reasoning, where it has any, is in
+   a comment beside it. `on` is the default: rules nobody has justified yet
+   start off, so the person opts into them rather than having them applied. */
+export type CleanRule = { does: string; why?: string }
+
+export type CleanOptionKey =
+  | 'styling'
+  | 'ids'
+  | 'aria'
+  | 'wrappers'
+  | 'inlineTags'
+  | 'empty'
+  | 'rows'
+  | 'spans'
+
+export type CleanOptions = Record<CleanOptionKey, boolean>
+
+export type CleanOption = { key: CleanOptionKey; label: string; on: boolean; rules: CleanRule[] }
+
+export const CLEAN_OPTIONS: { group: string; options: CleanOption[] }[] = [
+  {
+    group: 'Attributes',
+    options: [
+      {
+        key: 'styling',
+        label: 'Remove styling and script attributes',
+        on: true,
+        rules: [
+          // Styling would override the styles this app writes; data-* and handlers only meant
+          // something to the original page's scripts, which are not copied with the table
+          {
+            does: 'Removes class, style, data-*, onclick and other attributes left over from the original page, which would clash with the styles this app writes.',
+          },
+        ],
+      },
+      {
+        key: 'ids',
+        label: 'Remove ids',
+        on: false,
+        // No reason yet — and `headers` points at cells by their id
+        rules: [],
+      },
+      {
+        key: 'aria',
+        label: 'Remove role and ARIA attributes',
+        on: false,
+        // No reason yet — these are accessibility, not styling
+        rules: [],
+      },
+    ],
+  },
+  {
+    group: 'Wrappers',
+    options: [
+      {
+        key: 'wrappers',
+        label: 'Unwrap bare spans and nested divs',
+        on: true,
+        rules: [
+          // A bare span renders exactly as its text does; a cell's text four divs deep reads
+          // the same as the text on its own
+          {
+            does: 'Unwraps <span>s, and <div>s that are the only thing inside their parent, keeping their contents.',
+          },
+        ],
+      },
+      {
+        key: 'inlineTags',
+        label: 'Unwrap formatting tags',
+        on: false,
+        rules: [
+          // No reason yet — `m<sup>2</sup>` becomes `m2`
+          {
+            does: 'Unwraps <b>, <strong>, <em>, <i>, <sup>, <sub>, <code>, <a> without an href and the other inline tags, keeping their contents.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    group: 'Structure',
+    options: [
+      {
+        key: 'empty',
+        label: 'Remove empty elements',
+        on: true,
+        rules: [
+          // Leftover mount points for the original page's tooltips and widgets; they draw nothing
+          { does: 'Removes elements that contain no text, image or form control.' },
+        ],
+      },
+      {
+        key: 'rows',
+        label: 'Remove dead rows',
+        on: true,
+        rules: [
+          // They draw nothing but still count as rows, so every stripe after them is out of
+          // phase — and all-empty rows are often where the stray cells that push later rows
+          // sideways live
+          // Empty cells in a row with content are never removed: an empty cell still holds a
+          // place in the grid, and removing it would move every cell after it a column over
+          {
+            does: 'Removes rows that have no cells or only empty ones, while empty cells in rows with content stay so every column keeps its place.',
+          },
+        ],
+      },
+      {
+        key: 'spans',
+        label: 'Correct oversized spans',
+        on: true,
+        rules: [
+          // Browsers ignore the excess when drawing the table, but the number misleads
+          // anything that reads the markup, this app included
+          {
+            does: 'Shortens rowspans and colspans that reach past the edge of the table, which browsers ignore but this app would misread.',
+          },
+        ],
+      },
+    ],
+  },
+]
+
+export const DEFAULT_CLEAN_OPTIONS = Object.fromEntries(
+  CLEAN_OPTIONS.flatMap((g) => g.options).map((o) => [o.key, o.on]),
+) as CleanOptions
 /* The elements that build the grid. They hold slots, so they are never
    unwrapped and never dropped for being empty — an empty cell is still a cell,
    and removing it would shift every cell after it into the wrong column. */
@@ -76,30 +227,46 @@ function sectionsOf(table: Element): Element[] {
   return groups.length ? groups : [table]
 }
 
-/* ── Pass 1: attributes ── */
-function stripAttrs(root: Element): void {
+/* ── Pass 1: attributes ──
+   Each attribute is sorted into the option that decides it. The ones that
+   carry structure or meaning are not an option at all. */
+function attrOption(name: string): CleanOptionKey {
+  if (name === 'id') return 'ids'
+  if (name === 'role' || name.startsWith('aria-')) return 'aria'
+  return 'styling'
+}
+
+function stripAttrs(root: Element, opts: CleanOptions): void {
   root.querySelectorAll('*').forEach((el) => {
+    const isLink = el.hasAttribute('href')
     for (const a of [...el.attributes]) {
-      if (!KEEP_ATTRS.has(a.name.toLowerCase())) el.removeAttribute(a.name)
+      const name = a.name.toLowerCase()
+      if (KEEP_ATTRS.has(name) || (isLink && LINK_ATTR_NAMES.has(name))) continue
+      if (opts[attrOption(name)]) el.removeAttribute(a.name)
     }
   })
 }
 
 /* ── Pass 2: wrappers ──
-   An element with no attributes left and no grid role is scaffolding. Inline
-   scaffolding always goes: `<span><span>1/8</span></span>` renders as its text
-   either way. A block wrapper only goes when it is its parent's only child,
-   which is the nesting case; one of several blocks in a cell is separating
-   lines of content, and unwrapping it would run them together. */
-function unwrapWrappers(root: Element): number {
+   An element with no attributes left and no grid role is scaffolding. A span
+   always goes: `<span><span>1/8</span></span>` renders as its text either way.
+   A block wrapper only goes when it is its parent's only child, which is the
+   nesting case; one of several blocks in a cell is separating lines of
+   content, and unwrapping it would run them together. The other inline tags
+   are their own option, since they change how the text reads.
+
+   An attribute the person chose to keep is never lost to an unwrap: anything
+   still carrying one stays where it is. */
+function unwrapWrappers(root: Element, opts: CleanOptions): number {
   let unwrapped = 0
   for (let pass = 0; pass < 8; pass++) {
     const targets = [...root.querySelectorAll('*')].filter((el) => {
       const t = tag(el)
       if (el.attributes.length || GRID_TAGS.has(t)) return false
       if (REPLACED.has(t) || INTERACTIVE.has(t)) return false
-      if (INLINE_TAGS.has(t)) return true
-      return el.parentElement?.children.length === 1
+      if (t === 'span') return opts.wrappers
+      if (INLINE_TAGS.has(t)) return opts.inlineTags
+      return opts.wrappers && el.parentElement?.children.length === 1
     })
     if (!targets.length) break
     for (const el of targets) {
@@ -257,13 +424,13 @@ function collectNotices(table: Element): string[] {
   return notices
 }
 
-export function cleanMarkup(html: string): CleanResult {
+export function cleanMarkup(html: string, opts: CleanOptions = DEFAULT_CLEAN_OPTIONS): CleanResult {
   const root = document.createElement('div')
   root.innerHTML = html
 
-  stripAttrs(root)
-  const unwrapped = unwrapWrappers(root)
-  const emptied = dropEmpty(root)
+  stripAttrs(root, opts)
+  const unwrapped = unwrapWrappers(root, opts)
+  const emptied = opts.empty ? dropEmpty(root) : 0
 
   const table = root.querySelector('table')
   let rows = { spacers: 0, blanks: 0 }
@@ -271,8 +438,8 @@ export function cleanMarkup(html: string): CleanResult {
   let notices: string[] = []
 
   if (table) {
-    rows = dropDeadRows(table)
-    clamped = clampSpans(table, Math.max(0, ...rowWidths(table)))
+    if (opts.rows) rows = dropDeadRows(table)
+    if (opts.spans) clamped = clampSpans(table, Math.max(0, ...rowWidths(table)))
     notices = collectNotices(table)
   }
 

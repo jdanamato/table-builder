@@ -67,8 +67,10 @@ export function PreviewPanel({
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  /* No card of its own: the parent puts the preview and the CSS it is drawn
+     with in one. */
   return (
-    <section className="overflow-hidden rounded-xl border bg-card">
+    <>
       <header className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2.5">
         <div className="flex items-baseline gap-2">
           <span className="text-xs font-medium text-muted-foreground">Preview</span>
@@ -88,9 +90,9 @@ export function PreviewPanel({
         />
       ) : (
         <p className="px-4 py-12 text-center text-[13px] text-muted-foreground">
-          Paste table HTML below to preview.
+          Paste table HTML above to preview.
         </p>
       )}
-    </section>
+    </>
   )
 }

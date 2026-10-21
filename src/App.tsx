@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
-import { CodePanel } from '@/components/CodePanel'
+import { CssOutput, HtmlPanel } from '@/components/CodePanel'
 import { PreviewPanel } from '@/components/PreviewPanel'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { Separator } from '@/components/ui/separator'
 import { Tabs } from '@/components/interior/tabs'
 import { PrintTab } from '@/components/tabs/PrintTab'
 import { StyleTab } from '@/components/tabs/StyleTab'
 import { TableTab } from '@/components/tabs/TableTab'
-import { type CleanReport, cleanMarkup } from '@/lib/clean'
+import { type CleanOptions, type CleanReport, cleanMarkup } from '@/lib/clean'
 import { type CssFormat, cssText } from '@/lib/css'
 import { build, prettyHtml } from '@/lib/markup'
 import { INITIAL_SETTINGS, type Settings, adoptClasses, classPrefix } from '@/lib/mods'
@@ -96,8 +97,8 @@ export default function App() {
     lastPrefix.current = classPrefix(adopted)
   }
 
-  function onClean() {
-    const { html: cleaned, report } = cleanMarkup(html)
+  function onClean(opts: CleanOptions) {
+    const { html: cleaned, report } = cleanMarkup(html, opts)
     beforeClean.current = html
     setReport(report)
     const b = build(cleaned, settings, prefixes(settings))
@@ -150,16 +151,10 @@ export default function App() {
           }}
         />
 
-        {/* Preview stacked over the source editor, so pasted markup stays in
-            view while the table renders above it. */}
+        {/* The source editor over the preview, and the preview over the CSS it
+            is drawn with — in one card, so the output reads as one piece. */}
         <div className="flex min-w-0 flex-col gap-4 max-lg:order-1">
-          <PreviewPanel
-            html={built.previewHtml}
-            status={built.status}
-            stickyHeader={settings.stickyHeader}
-            stickyFirst={settings.stickyFirst}
-          />
-          <CodePanel
+          <HtmlPanel
             html={html}
             onHtmlChange={onHtmlChange}
             onPaste={() => {
@@ -169,10 +164,17 @@ export default function App() {
             onClean={onClean}
             report={report}
             onUndoClean={onUndoClean}
-            cssFormat={cssFormat}
-            onCssFormatChange={setCssFormat}
-            cssOut={cssOut}
           />
+          <section className="overflow-hidden rounded-xl border bg-card">
+            <PreviewPanel
+              html={built.previewHtml}
+              status={built.status}
+              stickyHeader={settings.stickyHeader}
+              stickyFirst={settings.stickyFirst}
+            />
+            <Separator />
+            <CssOutput cssFormat={cssFormat} onCssFormatChange={setCssFormat} cssOut={cssOut} />
+          </section>
         </div>
       </div>
     </div>
